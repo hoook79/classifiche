@@ -28,25 +28,17 @@ Apri la scheda `Users` e crea queste colonne nella prima riga:
 * **AllowedRadios (Abilitazione Radio):** Definisce quali radio l'utente può vedere. Puoi scrivere `all` o `*` per abilitarle tutte, oppure un elenco di radio separate da virgole (es. `Subasio, Mitology`).
 
 #### Come configurare il menu a tendina con spunta (multiselezione nativa):
-Per rendere semplicissima la scelta delle radio senza scriverle a mano, puoi abilitare la funzionalità nativa di multiselezione di Google Sheets:
+Per evitare di scrivere a mano i nomi delle radio (e aggiornarli ogni volta che ne aggiungi una), il sistema crea in automatico la scheda **`Active_Radios`** contenente tutte le radio abilitate.
+Puoi impostare il menu a tendina affinché le legga direttamente da questa scheda:
 1. Seleziona le celle della colonna **E** (da E2 in giù).
 2. Clicca su **Dati** > **Convalida dei dati** > **Aggiungi regola**.
-3. Sotto *Criteri*, seleziona **Menu a tendina**.
-4. Aggiungi le seguenti opzioni individuali:
-   * `all`
-   * `Subasio`
-   * `Divina`
-   * `Mitology`
-   * `Nostalgia`
-   * `Toscana`
-   * `Italia`
-   * `RDS`
-   * `RTL1025`
+3. Sotto *Criteri*, seleziona **Menu a tendina (da un intervallo)** (in inglese *Dropdown (from a range)*).
+4. Inserisci il seguente intervallo: `Active_Radios!A2:A`
 5. Nella barra laterale di destra della regola, clicca in fondo su **Opzioni avanzate**.
 6. Attiva la spunta su **Consenti selezioni multiple** (in inglese *Allow multiple selections*).
 7. Clicca su **Fine**.
 
-Ora, cliccando sulla cella, potrai selezionare e deselezionare più radio contemporaneamente tramite le spunte native di Google Sheets. Esse verranno registrate automaticamente nella cella come chip visuali.
+Ora, cliccando sulla cella, potrai selezionare e deselezionare più radio contemporaneamente tramite le spunte native di Google Sheets. L'elenco delle opzioni si aggiornerà automaticamente ad ogni caricamento dati del computer di casa!
 
 ---
 

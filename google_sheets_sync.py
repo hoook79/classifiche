@@ -98,21 +98,48 @@ def upload_rankings(all_radio_data):
         spreadsheet = client.open(SPREADSHEET_NAME)
         
         dates_metadata = []
+        active_radios = ["all"]
+
+        # Mappatura per la formattazione corretta dei nomi delle radio
+        capitalized_labels = {
+            "subasio": "Subasio",
+            "divina": "Divina",
+            "mitology": "Mitology",
+            "nostalgia": "Nostalgia",
+            "toscana": "Toscana",
+            "italia": "Italia",
+            "rds": "RDS",
+            "rtl1025": "RTL1025",
+            "birikina": "Birikina",
+            "bruno": "Bruno",
+            "kisskiss": "Kisskiss",
+            "m2o": "M2o",
+            "propostaaosta": "Propostaaosta"
+        }
 
         for radio_key, data in all_radio_data.items():
-            sheet_name = f"Data_{radio_key.capitalize()}"
+            formatted_name = capitalized_labels.get(radio_key.lower(), radio_key.capitalize())
+            sheet_name = f"Data_{formatted_name}"
             songs = data.get('songs', [])
             dates = data.get('dates', [])
             
             # Salva le date per questa radio nei metadati
             dates_metadata.append([radio_key, json.dumps(dates)])
+            active_radios.append(formatted_name)
 
             print(f"  Aggiornamento scheda '{sheet_name}' con {len(songs)} brani...")
             
-            # Cerca o crea la scheda per questa radio
-            try:
-                sheet = spreadsheet.worksheet(sheet_name)
-            except gspread.exceptions.WorksheetNotFound:
+            # Cerca la scheda esistente in modo case-insensitive per evitare conflitti e correggerne il nome se necessario
+            sheet = None
+            for w in spreadsheet.worksheets():
+                if w.title.lower() == sheet_name.lower():
+                    sheet = w
+                    if w.title != sheet_name:
+                        w.update_title(sheet_name)
+                        print(f"  Rinominata scheda '{w.title}' -> '{sheet_name}' per correzione maiuscole/minuscole.")
+                    break
+            
+            if sheet is None:
                 sheet = spreadsheet.add_worksheet(title=sheet_name, rows="1000", cols="7")
 
             # Costruisci la tabella dei dati
@@ -137,6 +164,18 @@ def upload_rankings(all_radio_data):
             range_name = f"A1:{gspread.utils.rowcol_to_a1(len(rows), 7)}"
             sheet.update(range_name, rows)
             print(f"  [OK] Scheda '{sheet_name}' aggiornata.")
+
+        # Aggiorna la tabella Active_Radios per consentire la convalida da intervallo
+        print("  Aggiornamento elenco delle radio attive...")
+        try:
+            active_sheet = spreadsheet.worksheet("Active_Radios")
+        except gspread.exceptions.WorksheetNotFound:
+            active_sheet = spreadsheet.add_worksheet(title="Active_Radios", rows="50", cols="1")
+        
+        active_rows = [["Radio"]] + [[r] for r in active_radios]
+        active_sheet.clear()
+        active_sheet.update(f"A1:A{len(active_rows)}", active_rows)
+        print("  [OK] Elenco delle radio attive aggiornato.")
 
         # Aggiorna la tabella Dates_Metadata
         print("  Aggiornamento metadati delle date...")

@@ -871,7 +871,10 @@ header{{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);c
 
 /* RADIO TABS */
 .radio-tabs{{display:flex;padding:0 32px;border-top:1px solid rgba(255,255,255,.1);overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}}
-.radio-tabs::-webkit-scrollbar{{display:none}}
+.radio-tabs::-webkit-scrollbar{{height:6px;display:block}}
+.radio-tabs::-webkit-scrollbar-track{{background:rgba(255,255,255,0.05)}}
+.radio-tabs::-webkit-scrollbar-thumb{{background:rgba(255,255,255,0.2);border-radius:3px}}
+.radio-tabs::-webkit-scrollbar-thumb:hover{{background:rgba(255,255,255,0.4)}}
 .radio-tab{{padding:14px 28px;font-size:14px;font-weight:600;cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,.5);border-bottom:3px solid transparent;transition:all .2s;letter-spacing:.5px;text-transform:uppercase;flex-shrink:0}}
 .radio-tab:hover{{color:rgba(255,255,255,.85)}}
 .radio-tab.active{{color:#fff;border-bottom-color:var(--red)}}
@@ -3833,6 +3836,17 @@ function initApp() {{
     }} else {{
       switchRadio(currentRadio);
     }}
+  }}
+
+  // Abilita lo scorrimento orizzontale con la rotellina del mouse sulle schede delle radio
+  const tabs = document.querySelector('.radio-tabs');
+  if (tabs) {{
+    tabs.addEventListener('wheel', (e) => {{
+      if (e.deltaY !== 0) {{
+        e.preventDefault();
+        tabs.scrollLeft += e.deltaY;
+      }}
+    }}, {{ passive: false }});
   }}
 }}
 
