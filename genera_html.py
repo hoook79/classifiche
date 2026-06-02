@@ -812,25 +812,20 @@ header{{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);c
 .radio-tab.active{{color:#fff;border-bottom-color:var(--red)}}
 
 /* FILTERS */
-.filters-bar{{background:#fff;border-bottom:2px solid var(--border);padding:16px 32px;display:flex;flex-direction:column;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.06)}}
-.filter-row{{display:flex;align-items:center;gap:16px;width:100%}}
-.main-filter-row{{justify-content:space-between}}
-.search-box{{position:relative;flex:1;max-width:400px}}
+.filters-bar{{background:#fff;border-bottom:2px solid var(--border);padding:14px 32px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:0 2px 8px rgba(0,0,0,.06)}}
+.filter-row{{display:contents}} /* Gli elementi fluiscono liberamente in orizzontale su desktop */
+.search-box{{position:relative;flex:1;min-width:200px;max-width:340px}}
 .search-box input{{width:100%;padding:9px 36px 9px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;outline:none;transition:border-color .2s;background:#fafafa}}
 .search-box input:focus{{border-color:var(--red);background:#fff}}
 .search-box .icon{{position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:15px;pointer-events:none}}
-.chips-filter-row{{overflow:hidden}}
-.decade-chips{{display:flex;gap:6px;overflow-x:auto;white-space:nowrap;padding-bottom:4px;-webkit-overflow-scrolling:touch}}
-.decade-chips::-webkit-scrollbar{{display:none}}
-.chip{{flex-shrink:0;padding:6px 13px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:#fafafa;color:var(--text-muted);transition:all .2s}}
+.decade-chips{{display:flex;gap:6px}}
+.chip{{padding:6px 13px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:#fafafa;color:var(--text-muted);transition:all .2s}}
 .chip:hover{{border-color:var(--red);color:var(--red)}}
 .chip.active{{background:var(--red);color:#fff;border-color:var(--red)}}
-.dropdowns-filter-row{{gap:24px}}
-.filter-select-group{{display:flex;align-items:center;gap:8px}}
-.filter-input-group{{display:flex;align-items:center;gap:8px}}
-.filter-input{{width:70px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:#fafafa;outline:none;color:var(--text);transition:border-color .2s}}
+.filter-select-group, .filter-input-group{{display:inline-flex;align-items:center;gap:8px}}
+.filter-input{{width:75px;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:#fafafa;outline:none;color:var(--text);transition:border-color .2s}}
 .filter-input:focus{{border-color:var(--red);background:#fff}}
-.results-count-wrap{{margin-left:auto}}
+.results-count-wrap{{margin-left:auto;display:flex;align-items:center}}
 .results-count{{font-size:13px;color:var(--text-muted);white-space:nowrap}}
 .filter-label{{font-size:12px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}}
 
@@ -1047,16 +1042,23 @@ td{{padding:10px 16px;vertical-align:middle}}
   .filters-bar{{
     padding:12px 16px;
     gap:10px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
   }}
   .filter-row{{
-    flex-wrap: nowrap;
+    display: flex; /* Attiva le righe separate solo su mobile */
+    align-items: center;
     gap: 8px;
+    width: 100%;
+    flex-wrap: nowrap;
   }}
   .main-filter-row{{
-    flex-wrap: nowrap;
+    justify-content: space-between;
   }}
   .search-box{{
     max-width: none;
+    width: 100%;
   }}
   .export-btn{{
     padding: 9px 12px !important;
