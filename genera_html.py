@@ -1591,18 +1591,75 @@ td{{padding:10px 16px;vertical-align:middle}}
   backdrop-filter: blur(12px) saturate(180%);
   -webkit-backdrop-filter: blur(12px) saturate(180%);
   border-bottom: 1.5px solid var(--border);
-  padding: 16px 32px;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  padding: 10px 32px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
 }}
 .global-selector-bar.show {{
   display: flex;
 }}
-.global-selector-label {{
+.global-selector-header {{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 0;
+}}
+.global-selector-summary {{
   font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}}
+.global-selector-summary strong {{
+  color: #0d9488;
+}}
+.global-toggle-btn {{
+  background: transparent;
+  border: none;
   font-weight: 700;
-  color: var(--text);
+  color: #0d9488;
+  cursor: pointer;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}}
+.global-toggle-btn:hover {{
+  background: rgba(13, 148, 136, 0.08);
+}}
+.global-selector-body {{
+  display: none;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  margin-top: 8px;
+  animation: slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}}
+.global-selector-body.open {{
+  display: flex;
+}}
+@keyframes slideDown {{
+  from {{ opacity: 0; transform: translateY(-5px); }}
+  to {{ opacity: 1; transform: translateY(0); }}
+}}
+.global-checkboxes-container {{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}}
+.global-selector-label {{
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }}
@@ -1906,52 +1963,60 @@ body.user-is-viewer .radio-date-badge {{
 </header>
 
 <div class="global-selector-bar" id="global-selector-bar">
-  <span class="global-selector-label">Seleziona radio da sommare:</span>
-  <div class="global-checkboxes">
-    <label class="global-cb-wrap checked" id="cb-subasio">
-      <input type="checkbox" checked onchange="toggleGlobalRadio('subasio')" data-radio="subasio">
-      <span class="global-cb-check"></span>
-      <span class="global-cb-label">Subasio</span>
-    </label>
-    <label class="global-cb-wrap checked" id="cb-divina">
-      <input type="checkbox" checked onchange="toggleGlobalRadio('divina')" data-radio="divina">
-      <span class="global-cb-check"></span>
-      <span class="global-cb-label">Divina</span>
-    </label>
-    <label class="global-cb-wrap checked" id="cb-mitology">
-      <input type="checkbox" checked onchange="toggleGlobalRadio('mitology')" data-radio="mitology">
-      <span class="global-cb-check"></span>
-      <span class="global-cb-label">Mitology</span>
-    </label>
-    <label class="global-cb-wrap checked" id="cb-nostalgia">
-      <input type="checkbox" checked onchange="toggleGlobalRadio('nostalgia')" data-radio="nostalgia">
-      <span class="global-cb-check"></span>
-      <span class="global-cb-label">Nostalgia</span>
-    </label>
-    <label class="global-cb-wrap checked" id="cb-toscana">
-      <input type="checkbox" checked onchange="toggleGlobalRadio('toscana')" data-radio="toscana">
-      <span class="global-cb-check"></span>
-      <span class="global-cb-label">Toscana</span>
-    </label>
-    <label class="global-cb-wrap checked" id="cb-italia">
-      <input type="checkbox" checked onchange="toggleGlobalRadio('italia')" data-radio="italia">
-      <span class="global-cb-check"></span>
-      <span class="global-cb-label">Italia</span>
-    </label>
-    <label class="global-cb-wrap checked" id="cb-rds">
-      <input type="checkbox" checked onchange="toggleGlobalRadio('rds')" data-radio="rds">
-      <span class="global-cb-check"></span>
-      <span class="global-cb-label">RDS</span>
-    </label>
-    <label class="global-cb-wrap checked" id="cb-rtl1025">
-      <input type="checkbox" checked onchange="toggleGlobalRadio('rtl1025')" data-radio="rtl1025">
-      <span class="global-cb-check"></span>
-      <span class="global-cb-label">RTL 102.5</span>
-    </label>
+  <div class="global-selector-header" onclick="toggleGlobalSelectorBody()">
+    <span class="global-selector-summary">🌍 Canali sommati: <strong id="global-active-count">Caricamento...</strong></span>
+    <button class="global-toggle-btn" id="global-toggle-btn" onclick="event.stopPropagation(); toggleGlobalSelectorBody()">Personalizza ▾</button>
   </div>
-  <div class="global-actions">
-    <button class="global-action-btn" onclick="selectAllGlobal()">✓ Tutte</button>
-    <button class="global-action-btn" onclick="selectNoneGlobal()">✕ Nessuna</button>
+  <div class="global-selector-body" id="global-selector-body">
+    <div class="global-checkboxes-container">
+      <span class="global-selector-label">Seleziona radio da sommare:</span>
+      <div class="global-checkboxes">
+        <label class="global-cb-wrap checked" id="cb-subasio">
+          <input type="checkbox" checked onchange="toggleGlobalRadio('subasio')" data-radio="subasio">
+          <span class="global-cb-check"></span>
+          <span class="global-cb-label">Subasio</span>
+        </label>
+        <label class="global-cb-wrap checked" id="cb-divina">
+          <input type="checkbox" checked onchange="toggleGlobalRadio('divina')" data-radio="divina">
+          <span class="global-cb-check"></span>
+          <span class="global-cb-label">Divina</span>
+        </label>
+        <label class="global-cb-wrap checked" id="cb-mitology">
+          <input type="checkbox" checked onchange="toggleGlobalRadio('mitology')" data-radio="mitology">
+          <span class="global-cb-check"></span>
+          <span class="global-cb-label">Mitology</span>
+        </label>
+        <label class="global-cb-wrap checked" id="cb-nostalgia">
+          <input type="checkbox" checked onchange="toggleGlobalRadio('nostalgia')" data-radio="nostalgia">
+          <span class="global-cb-check"></span>
+          <span class="global-cb-label">Nostalgia</span>
+        </label>
+        <label class="global-cb-wrap checked" id="cb-toscana">
+          <input type="checkbox" checked onchange="toggleGlobalRadio('toscana')" data-radio="toscana">
+          <span class="global-cb-check"></span>
+          <span class="global-cb-label">Toscana</span>
+        </label>
+        <label class="global-cb-wrap checked" id="cb-italia">
+          <input type="checkbox" checked onchange="toggleGlobalRadio('italia')" data-radio="italia">
+          <span class="global-cb-check"></span>
+          <span class="global-cb-label">Italia</span>
+        </label>
+        <label class="global-cb-wrap checked" id="cb-rds">
+          <input type="checkbox" checked onchange="toggleGlobalRadio('rds')" data-radio="rds">
+          <span class="global-cb-check"></span>
+          <span class="global-cb-label">RDS</span>
+        </label>
+        <label class="global-cb-wrap checked" id="cb-rtl1025">
+          <input type="checkbox" checked onchange="toggleGlobalRadio('rtl1025')" data-radio="rtl1025">
+          <span class="global-cb-check"></span>
+          <span class="global-cb-label">RTL 102.5</span>
+        </label>
+      </div>
+    </div>
+    <div class="global-actions">
+      <button class="global-action-btn" onclick="selectAllGlobal()">✓ Tutte</button>
+      <button class="global-action-btn" onclick="selectNoneGlobal()">✕ Nessuna</button>
+    </div>
   </div>
 </div>
 
@@ -2293,6 +2358,39 @@ function applyAllowedRadiosVisibility() {{
     currentRadio = 'globale';
     isGlobale = true;
   }}
+  updateGlobalSelectorSummary();
+}}
+
+function toggleGlobalSelectorBody() {{
+  const body = document.getElementById('global-selector-body');
+  const btn = document.getElementById('global-toggle-btn');
+  if (body) {{
+    const isOpen = body.classList.toggle('open');
+    if (btn) {{
+      btn.textContent = isOpen ? 'Chiudi ▴' : 'Personalizza ▾';
+    }}
+  }}
+}}
+
+function updateGlobalSelectorSummary() {{
+  const activeCount = globalSelectedRadios.size;
+  const activeNames = Array.from(globalSelectedRadios)
+    .map(k => RADIO_LABELS[k] ? RADIO_LABELS[k].replace('Radio ', '').replace(' Nostalgia', '') : k)
+    .join(', ');
+  
+  const countEl = document.getElementById('global-active-count');
+  if (countEl) {{
+    // Conta quante radio hanno dati reali in RAW (cioè sono abilitate per l'utente)
+    const totalAllowed = RADIO_KEYS.filter(k => RAW[k] && RAW[k].songs && RAW[k].songs.length > 0).length;
+    
+    if (activeCount === 0) {{
+      countEl.innerHTML = "Nessuna radio selezionata (somma vuota)";
+    }} else if (activeCount === totalAllowed) {{
+      countEl.innerHTML = activeCount + " radio (tutte)";
+    }} else {{
+      countEl.innerHTML = activeCount + " radio (" + activeNames + ")";
+    }}
+  }}
 }}
 
 function buildGlobalData() {{
@@ -2468,17 +2566,31 @@ function toggleGlobalRadio(radioKey) {{
   }}
   
   buildGlobalData();
+  updateGlobalSelectorSummary();
   loadData();
 }}
 
 function selectAllGlobal() {{
+  const isAllowed = (k) => {{
+    if (userAllowedRadios === 'all' || userAllowedRadios === '*') return true;
+    if (Array.isArray(userAllowedRadios)) {{
+      return userAllowedRadios.map(r => r.toLowerCase().trim()).includes(k.toLowerCase().trim());
+    }}
+    return false;
+  }};
+
   RADIO_KEYS.forEach(radioKey => {{
+    if (!isAllowed(radioKey)) return;
+    
     globalSelectedRadios.add(radioKey);
     const wrap = document.getElementById(`cb-${{radioKey}}`);
-    wrap.classList.add('checked');
-    wrap.querySelector('input[type="checkbox"]').checked = true;
+    if (wrap) {{
+      wrap.classList.add('checked');
+      wrap.querySelector('input[type="checkbox"]').checked = true;
+    }}
   }});
   buildGlobalData();
+  updateGlobalSelectorSummary();
   loadData();
 }}
 
@@ -2486,10 +2598,13 @@ function selectNoneGlobal() {{
   globalSelectedRadios.clear();
   RADIO_KEYS.forEach(radioKey => {{
     const wrap = document.getElementById(`cb-${{radioKey}}`);
-    wrap.classList.remove('checked');
-    wrap.querySelector('input[type="checkbox"]').checked = false;
+    if (wrap) {{
+      wrap.classList.remove('checked');
+      wrap.querySelector('input[type="checkbox"]').checked = false;
+    }}
   }});
   buildGlobalData();
+  updateGlobalSelectorSummary();
   loadData();
 }}
 
