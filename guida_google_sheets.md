@@ -27,8 +27,8 @@ Apri la scheda `Users` e crea queste colonne nella prima riga:
 * **ExpirationDate:** Deve essere scritta nel formato `AAAA-MM-GG`. Se la data odierna supera questa data, l'utente riceverà un messaggio di blocco "Utenza scaduta".
 * **AllowedRadios (Abilitazione Radio):** Definisce quali radio l'utente può vedere. Puoi scrivere `all` o `*` per abilitarle tutte, oppure un elenco di radio separate da virgole (es. `Subasio, Mitology`).
 
-#### Come configurare il menu a tendina con spunta (multiselezione):
-Per rendere semplicissima la scelta delle radio senza scriverle a mano, puoi creare un menu a tendina dinamico:
+#### Come configurare il menu a tendina con spunta (multiselezione nativa):
+Per rendere semplicissima la scelta delle radio senza scriverle a mano, puoi abilitare la funzionalità nativa di multiselezione di Google Sheets:
 1. Seleziona le celle della colonna **E** (da E2 in giù).
 2. Clicca su **Dati** > **Convalida dei dati** > **Aggiungi regola**.
 3. Sotto *Criteri*, seleziona **Menu a tendina**.
@@ -42,13 +42,11 @@ Per rendere semplicissima la scelta delle radio senza scriverle a mano, puoi cre
    * `Italia`
    * `RDS`
    * `RTL1025`
-5. Clicca su **Fine**.
+5. Nella barra laterale di destra della regola, clicca in fondo su **Opzioni avanzate**.
+6. Attiva la spunta su **Consenti selezioni multiple** (in inglese *Allow multiple selections*).
+7. Clicca su **Fine**.
 
-**Come funziona il trigger onEdit multiscelta:**
-Grazie allo script inserito in Apps Script, quando cliccherai sul menu a tendina in Google Sheets:
-* Selezionando una radio (es. `Mitology`), questa verrà aggiunta alla cella.
-* Selezionandola di nuovo (es. clicchi ancora su `Mitology`), verrà rimossa dalla cella (come togliere una spunta).
-* Se selezioni `all`, la cella si imposterà su `all` sbloccando tutto.
+Ora, cliccando sulla cella, potrai selezionare e deselezionare più radio contemporaneamente tramite le spunte native di Google Sheets. Esse verranno registrate automaticamente nella cella come chip visuali.
 
 ---
 
