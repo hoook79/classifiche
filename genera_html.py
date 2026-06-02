@@ -3585,7 +3585,7 @@ async function fetchChartsData() {{
 
   const tbody = document.getElementById('chart-body');
   if (tbody) {{
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:50px;font-weight:600;color:var(--text-muted)">Caricamento dei dati da Google Sheets in corso... ⏳</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:50px;font-weight:600;color:var(--text-muted)">Caricamento dati in corso... ⏳</td></tr>';
   }}
 
   try {{
