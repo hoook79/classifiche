@@ -36,7 +36,7 @@ if %errorlevel% neq 0 (
 )
 
 rem 4. Aggiungi i file al tracciamento
-git add .gitignore index.html *.py *.bat *.vbs
+git add .gitignore index.html *.py *.bat *.vbs *.js *.md
 
 rem 5. Crea il commit
 git commit -m "Aggiornamento classifica e codice (%date% %time%)" > nul 2>&1

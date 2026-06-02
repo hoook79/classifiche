@@ -1893,7 +1893,8 @@ body.user-is-viewer .radio-date-badge {{
     </div>
   </div>
   <div class="radio-tabs">
-    <button class="radio-tab active" onclick="switchRadio('subasio')">Radio Subasio</button>
+    <button class="radio-tab globale active" id="tab-globale" onclick="switchRadio('globale')">🌍 Classifica Globale</button>
+    <button class="radio-tab" onclick="switchRadio('subasio')">Radio Subasio</button>
     <button class="radio-tab" onclick="switchRadio('divina')">Radio Divina</button>
     <button class="radio-tab" onclick="switchRadio('mitology')">Radio Mitology</button>
     <button class="radio-tab" onclick="switchRadio('nostalgia')">Nostalgia Toscana</button>
@@ -1901,7 +1902,6 @@ body.user-is-viewer .radio-date-badge {{
     <button class="radio-tab" onclick="switchRadio('italia')">Radio Italia</button>
     <button class="radio-tab" onclick="switchRadio('rds')">RDS</button>
     <button class="radio-tab" onclick="switchRadio('rtl1025')">RTL 102.5</button>
-    <button class="radio-tab globale" id="tab-globale" onclick="switchRadio('globale')">🌍 Classifica Globale</button>
   </div>
 </header>
 
@@ -2164,7 +2164,7 @@ const RAW = {{
   rtl1025:{json_rtl1025}
 }};
 
-let currentRadio = 'subasio';
+let currentRadio = 'globale';
 let allSongs = [];
 let allDates = [];
 let selectedDates = null;  // null = tutte le date; Set = date selezionate
@@ -2178,7 +2178,8 @@ const RADIO_LABELS = {{
   rds: 'RDS', rtl1025: 'RTL 102.5'
 }};
 let globalSelectedRadios = new Set(RADIO_KEYS);
-let isGlobale = false;
+let isGlobale = true;
+let userAllowedRadios = 'all';
 let lastFilteredSongs = [];
 
 function getNormKey(artist, title) {{
@@ -2239,12 +2240,59 @@ function getNormKey(artist, title) {{
       cleaned.push(artClean);
     }}
   }});
-  
   cleaned.sort();
   const canonicalArtist = cleaned.join('');
   const canonicalTitle = titleClean.replace(/[^a-z0-9]/g,'');
   
   return canonicalArtist ? (canonicalArtist + '|' + canonicalTitle) : canonicalTitle;
+}}
+
+function applyAllowedRadiosVisibility() {{
+  const isAllowed = (radioKey) => {{
+    if (userAllowedRadios === 'all' || userAllowedRadios === '*') return true;
+    if (Array.isArray(userAllowedRadios)) {{
+      return userAllowedRadios.map(r => r.toLowerCase().trim()).includes(radioKey.toLowerCase().trim());
+    }}
+    return false;
+  }};
+
+  RADIO_KEYS.forEach(radioKey => {{
+    const allowed = isAllowed(radioKey);
+    
+    // 1. Pulisci i dati RAW in locale per impedire l'ispezione della cache HTML se non consentito
+    if (!allowed) {{
+      RAW[radioKey] = {{ songs: [], dates: [] }};
+      globalSelectedRadios.delete(radioKey);
+      
+      // Assicura che la checkbox globale sia deselezionata
+      const cbWrap = document.getElementById('cb-' + radioKey);
+      if (cbWrap) {{
+        cbWrap.classList.remove('checked');
+        const input = cbWrap.querySelector('input[type="checkbox"]');
+        if (input) input.checked = false;
+      }}
+    }}
+    
+    // 2. Mostra/Nascondi la tab corrispondente
+    document.querySelectorAll('.radio-tab').forEach(btn => {{
+      const onclickAttr = btn.getAttribute('onclick');
+      if (onclickAttr && onclickAttr.includes("'" + radioKey + "'")) {{
+        btn.style.display = allowed ? '' : 'none';
+      }}
+    }});
+
+    // 3. Mostra/Nascondi la checkbox nella barra globale
+    const cbWrap = document.getElementById('cb-' + radioKey);
+    if (cbWrap) {{
+      cbWrap.style.display = allowed ? '' : 'none';
+    }}
+  }});
+
+  // Se la radio selezionata corrente non è più autorizzata, la reimposta a 'globale'
+  if (currentRadio !== 'globale' && !isAllowed(currentRadio)) {{
+    currentRadio = 'globale';
+    isGlobale = true;
+  }}
 }}
 
 function buildGlobalData() {{
@@ -3391,6 +3439,8 @@ async function performLogin() {{
     if (data.success) {{
       localStorage.setItem('radio_charts_user', user);
       localStorage.setItem('radio_charts_pass', pass);
+      localStorage.setItem('radio_charts_allowed_radios', JSON.stringify(data.allowedRadios));
+      userAllowedRadios = data.allowedRadios;
       userRole = data.role;
       loggedInUser = user;
       document.getElementById('login-overlay').style.display = 'none';
@@ -3429,6 +3479,10 @@ async function fetchChartsData() {{
     const result = await res.json();
     
     if (result.success) {{
+      localStorage.setItem('radio_charts_allowed_radios', JSON.stringify(result.allowedRadios));
+      userAllowedRadios = result.allowedRadios;
+      applyAllowedRadiosVisibility();
+
       Object.keys(result.data).forEach(k => {{
         RAW[k] = result.data[k];
       }});
@@ -3448,6 +3502,7 @@ async function fetchChartsData() {{
     document.getElementById('login-overlay').style.display = 'none';
     userRole = 'user';
     updateEditPermissions();
+    applyAllowedRadiosVisibility();
     switchRadio(currentRadio);
   }}
 }}
@@ -3462,6 +3517,8 @@ function showLoginScreen() {{
 function logout() {{
   localStorage.removeItem('radio_charts_user');
   localStorage.removeItem('radio_charts_pass');
+  localStorage.removeItem('radio_charts_allowed_radios');
+  userAllowedRadios = 'all';
   userRole = null;
   loggedInUser = null;
   showLoginScreen();
@@ -3498,6 +3555,15 @@ function initApp() {{
   if (isOnlineConfigured) {{
     const user = localStorage.getItem('radio_charts_user');
     const pass = localStorage.getItem('radio_charts_pass');
+    const savedAllowed = localStorage.getItem('radio_charts_allowed_radios');
+    if (savedAllowed) {{
+      try {{
+        userAllowedRadios = JSON.parse(savedAllowed);
+      }} catch(e) {{
+        userAllowedRadios = 'all';
+      }}
+    }}
+    applyAllowedRadiosVisibility();
     if (user && pass) {{
       document.getElementById('login-overlay').style.display = 'none';
       fetchChartsData();
@@ -3507,7 +3573,9 @@ function initApp() {{
   }} else {{
     document.getElementById('login-overlay').style.display = 'none';
     userRole = 'admin'; // offline sono tutti admin
+    userAllowedRadios = 'all';
     updateEditPermissions();
+    applyAllowedRadiosVisibility();
     switchRadio(currentRadio);
   }}
 }}
