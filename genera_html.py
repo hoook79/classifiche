@@ -24,6 +24,11 @@ TOSCANA_JSON   = os.path.join(BASE, 'radio_toscana_history.json')
 ITALIA_JSON    = os.path.join(BASE, 'radio_italia_history.json')
 RDS_JSON       = os.path.join(BASE, 'radio_rds_history.json')
 RTL1025_JSON   = os.path.join(BASE, 'radio_rtl1025_history.json')
+BIRIKINA_JSON  = os.path.join(BASE, 'radio_birikina_history.json')
+BRUNO_JSON     = os.path.join(BASE, 'radio_bruno_history.json')
+KISSKISS_JSON  = os.path.join(BASE, 'radio_kisskiss_history.json')
+M2O_JSON       = os.path.join(BASE, 'radio_m2o_history.json')
+PROPOSTAAOSTA_JSON = os.path.join(BASE, 'radio_propostaaosta_history.json')
 CACHE_YEARS    = os.path.join(BASE, 'song_years_cache.json')
 CACHE_OVERRIDES = os.path.join(BASE, 'manual_years_override.json')
 CACHE_RADIODATES = os.path.join(BASE, 'song_radiodates_cache.json')
@@ -205,7 +210,7 @@ _NEW_PROMO_PATTERNS = [
 _RADIO_NAME_EXACT = re.compile(
     r'^(radio\s+)?(subasio|divina|nostalgia|mitology|toscana|deejay|italia|'
     r'rtl(\s*102\.5)?|rds|rai|105|m2o|virgin|r101|capital|freccia|gold|'
-    r'kiss\s*kiss|monte\s*carlo|studio\s*54|studio54|network|antenna)$',
+    r'kiss\s*kiss|monte\s*carlo|studio\s*54|studio54|network|antenna|birikina|bruno|proposta)$',
     re.IGNORECASE
 )
 
@@ -476,6 +481,31 @@ if os.path.exists(RTL1025_JSON):
     with open(RTL1025_JSON, 'r', encoding='utf-8') as f:
         rtl1025_history = json.load(f)
 
+birikina_history = []
+if os.path.exists(BIRIKINA_JSON):
+    with open(BIRIKINA_JSON, 'r', encoding='utf-8') as f:
+        birikina_history = json.load(f)
+
+bruno_history = []
+if os.path.exists(BRUNO_JSON):
+    with open(BRUNO_JSON, 'r', encoding='utf-8') as f:
+        bruno_history = json.load(f)
+
+kisskiss_history = []
+if os.path.exists(KISSKISS_JSON):
+    with open(KISSKISS_JSON, 'r', encoding='utf-8') as f:
+        kisskiss_history = json.load(f)
+
+m2o_history = []
+if os.path.exists(M2O_JSON):
+    with open(M2O_JSON, 'r', encoding='utf-8') as f:
+        m2o_history = json.load(f)
+
+propostaaosta_history = []
+if os.path.exists(PROPOSTAAOSTA_JSON):
+    with open(PROPOSTAAOSTA_JSON, 'r', encoding='utf-8') as f:
+        propostaaosta_history = json.load(f)
+
 years_cache = {}
 if os.path.exists(CACHE_YEARS):
     with open(CACHE_YEARS, 'r', encoding='utf-8') as f:
@@ -517,7 +547,7 @@ normalized_radiodates_cache = {normalize_name(k): v for k, v in radiodates_cache
 # Costruzione mappatura canonica globale per unire i doppioni
 print("Costruzione mappatura canonica globale per rimuovere doppioni...")
 global_song_counts = Counter()
-for history in [subasio_history, divina_history, mitology_history, nostalgia_history, toscana_history, italia_history, rds_history, rtl1025_history]:
+for history in [subasio_history, divina_history, mitology_history, nostalgia_history, toscana_history, italia_history, rds_history, rtl1025_history, birikina_history, bruno_history, kisskiss_history, m2o_history, propostaaosta_history]:
     for item in history:
         global_song_counts[item['song']] += 1
 
@@ -695,6 +725,21 @@ rds_ranked, rds_dates_sorted = process_generic_radio(rds_history, "RDS")
 print("Elaborazione RTL 102.5...")
 rtl1025_ranked, rtl1025_dates_sorted = process_generic_radio(rtl1025_history, "RTL 102.5")
 
+print("Elaborazione Radio Birikina...")
+birikina_ranked, birikina_dates_sorted = process_generic_radio(birikina_history, "Radio Birikina")
+
+print("Elaborazione Radio Bruno...")
+bruno_ranked, bruno_dates_sorted = process_generic_radio(bruno_history, "Radio Bruno")
+
+print("Elaborazione Radio Kiss Kiss...")
+kisskiss_ranked, kisskiss_dates_sorted = process_generic_radio(kisskiss_history, "Radio Kiss Kiss")
+
+print("Elaborazione Radio m2o...")
+m2o_ranked, m2o_dates_sorted = process_generic_radio(m2o_history, "Radio m2o")
+
+print("Elaborazione Proposta Aosta...")
+propostaaosta_ranked, propostaaosta_dates_sorted = process_generic_radio(propostaaosta_history, "Proposta Aosta")
+
 # ── Serializza JSON per HTML ──────────────────────────────────────────────────
 def make_radio_data(ranked, dates_sorted):
     songs_out = []
@@ -736,6 +781,11 @@ raw_toscana   = make_radio_data(toscana_ranked,   toscana_dates_sorted)
 raw_italia    = make_radio_data(italia_ranked,    italia_dates_sorted)
 raw_rds       = make_radio_data(rds_ranked,       rds_dates_sorted)
 raw_rtl1025   = make_radio_data(rtl1025_ranked,   rtl1025_dates_sorted)
+raw_birikina  = make_radio_data(birikina_ranked,  birikina_dates_sorted)
+raw_bruno     = make_radio_data(bruno_ranked,     bruno_dates_sorted)
+raw_kisskiss  = make_radio_data(kisskiss_ranked,  kisskiss_dates_sorted)
+raw_m2o       = make_radio_data(m2o_ranked,       m2o_dates_sorted)
+raw_propostaaosta = make_radio_data(propostaaosta_ranked, propostaaosta_dates_sorted)
 
 # Tenta di caricare le classifiche calcolate su Google Sheets
 try:
@@ -748,7 +798,12 @@ try:
         'toscana': raw_toscana,
         'italia': raw_italia,
         'rds': raw_rds,
-        'rtl1025': raw_rtl1025
+        'rtl1025': raw_rtl1025,
+        'birikina': raw_birikina,
+        'bruno': raw_bruno,
+        'kisskiss': raw_kisskiss,
+        'm2o': raw_m2o,
+        'propostaaosta': raw_propostaaosta
     }
     upload_rankings(all_data_to_upload)
 except Exception as e:
@@ -762,6 +817,11 @@ json_toscana   = json.dumps(raw_toscana,   ensure_ascii=False, separators=(',', 
 json_italia    = json.dumps(raw_italia,    ensure_ascii=False, separators=(',', ':'))
 json_rds       = json.dumps(raw_rds,       ensure_ascii=False, separators=(',', ':'))
 json_rtl1025   = json.dumps(raw_rtl1025,   ensure_ascii=False, separators=(',', ':'))
+json_birikina  = json.dumps(raw_birikina,  ensure_ascii=False, separators=(',', ':'))
+json_bruno     = json.dumps(raw_bruno,     ensure_ascii=False, separators=(',', ':'))
+json_kisskiss  = json.dumps(raw_kisskiss,  ensure_ascii=False, separators=(',', ':'))
+json_m2o       = json.dumps(raw_m2o,       ensure_ascii=False, separators=(',', ':'))
+json_propostaaosta = json.dumps(raw_propostaaosta, ensure_ascii=False, separators=(',', ':'))
 
 print(f"  JSON Subasio:   {len(json_subasio)//1024} KB")
 print(f"  JSON Divina:    {len(json_divina)//1024} KB")
@@ -771,6 +831,11 @@ print(f"  JSON Toscana:   {len(json_toscana)//1024} KB")
 print(f"  JSON Italia:    {len(json_italia)//1024} KB")
 print(f"  JSON RDS:       {len(json_rds)//1024} KB")
 print(f"  JSON RTL 102.5: {len(json_rtl1025)//1024} KB")
+print(f"  JSON Birikina:  {len(json_birikina)//1024} KB")
+print(f"  JSON Bruno:     {len(json_bruno)//1024} KB")
+print(f"  JSON Kiss Kiss: {len(json_kisskiss)//1024} KB")
+print(f"  JSON m2o:       {len(json_m2o)//1024} KB")
+print(f"  JSON Proposta:  {len(json_propostaaosta)//1024} KB")
 
 # ── Genera HTML ───────────────────────────────────────────────────────────────
 print("Generazione HTML...")
@@ -1959,6 +2024,11 @@ body.user-is-viewer .radio-date-badge {{
     <button class="radio-tab" onclick="switchRadio('italia')">Radio Italia</button>
     <button class="radio-tab" onclick="switchRadio('rds')">RDS</button>
     <button class="radio-tab" onclick="switchRadio('rtl1025')">RTL 102.5</button>
+    <button class="radio-tab" onclick="switchRadio('birikina')">Radio Birikina</button>
+    <button class="radio-tab" onclick="switchRadio('bruno')">Radio Bruno</button>
+    <button class="radio-tab" onclick="switchRadio('kisskiss')">Radio Kiss Kiss</button>
+    <button class="radio-tab" onclick="switchRadio('m2o')">Radio m2o</button>
+    <button class="radio-tab" onclick="switchRadio('propostaaosta')">Proposta Aosta</button>
   </div>
 </header>
 
@@ -2010,6 +2080,31 @@ body.user-is-viewer .radio-date-badge {{
           <input type="checkbox" checked onchange="toggleGlobalRadio('rtl1025')" data-radio="rtl1025">
           <span class="global-cb-check"></span>
           <span class="global-cb-label">RTL 102.5</span>
+        </label>
+        <label class="global-cb-wrap checked" id="cb-birikina">
+          <input type="checkbox" checked onchange="toggleGlobalRadio('birikina')" data-radio="birikina">
+          <span class="global-cb-check"></span>
+          <span class="global-cb-label">Birikina</span>
+        </label>
+        <label class="global-cb-wrap checked" id="cb-bruno">
+          <input type="checkbox" checked onchange="toggleGlobalRadio('bruno')" data-radio="bruno">
+          <span class="global-cb-check"></span>
+          <span class="global-cb-label">Bruno</span>
+        </label>
+        <label class="global-cb-wrap checked" id="cb-kisskiss">
+          <input type="checkbox" checked onchange="toggleGlobalRadio('kisskiss')" data-radio="kisskiss">
+          <span class="global-cb-check"></span>
+          <span class="global-cb-label">Kiss Kiss</span>
+        </label>
+        <label class="global-cb-wrap checked" id="cb-m2o">
+          <input type="checkbox" checked onchange="toggleGlobalRadio('m2o')" data-radio="m2o">
+          <span class="global-cb-check"></span>
+          <span class="global-cb-label">m2o</span>
+        </label>
+        <label class="global-cb-wrap checked" id="cb-propostaaosta">
+          <input type="checkbox" checked onchange="toggleGlobalRadio('propostaaosta')" data-radio="propostaaosta">
+          <span class="global-cb-check"></span>
+          <span class="global-cb-label">Proposta</span>
         </label>
       </div>
     </div>
@@ -2230,7 +2325,12 @@ const RAW = {{
   toscana:{json_toscana},
   italia:{json_italia},
   rds:{json_rds},
-  rtl1025:{json_rtl1025}
+  rtl1025:{json_rtl1025},
+  birikina:{json_birikina},
+  bruno:{json_bruno},
+  kisskiss:{json_kisskiss},
+  m2o:{json_m2o},
+  propostaaosta:{json_propostaaosta}
 }};
 
 let currentRadio = 'globale';
@@ -2240,11 +2340,13 @@ let selectedDates = null;  // null = tutte le date; Set = date selezionate
 let currentSort = [{{col:'plays', dir:'desc'}}];
 let activeDecade = 'all';
 
-const RADIO_KEYS = ['subasio','divina','mitology','nostalgia','toscana','italia','rds','rtl1025'];
+const RADIO_KEYS = ['subasio','divina','mitology','nostalgia','toscana','italia','rds','rtl1025','birikina','bruno','kisskiss','m2o','propostaaosta'];
 const RADIO_LABELS = {{
   subasio: 'Radio Subasio', divina: 'Radio Divina', mitology: 'Radio Mitology',
   nostalgia: 'Nostalgia Toscana', toscana: 'Radio Toscana', italia: 'Radio Italia',
-  rds: 'RDS', rtl1025: 'RTL 102.5'
+  rds: 'RDS', rtl1025: 'RTL 102.5',
+  birikina: 'Radio Birikina', bruno: 'Radio Bruno', kisskiss: 'Radio Kiss Kiss',
+  m2o: 'Radio m2o', propostaaosta: 'Proposta Aosta'
 }};
 let globalSelectedRadios = new Set(RADIO_KEYS);
 let isGlobale = true;
@@ -2669,12 +2771,12 @@ function buildDecadeChips() {{
   const container = document.getElementById('decade-chips');
   container.innerHTML = sortedDecades.map(d => {{
     const label = d === 'all' ? 'Tutti' : `${{d}}s`;
-    return `<span class="chip${{activeDecade==d?' active':''}}" onclick="filterDecade(${{JSON.stringify(d)}})">${{label}}</span>`;
+    return `<span class="chip${{activeDecade==d?' active':''}}" onclick="filterDecade('${{d}}')">${{label}}</span>`;
   }}).join('');
 }}
 
 function filterDecade(d) {{
-  activeDecade = d;
+  activeDecade = d === 'all' ? 'all' : parseInt(d);
   applyFilters();
   buildDecadeChips();
 }}

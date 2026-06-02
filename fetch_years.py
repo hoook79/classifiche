@@ -22,6 +22,11 @@ TOSCANA_FILE  = 'radio_toscana_history.json'
 ITALIA_FILE   = 'radio_italia_history.json'
 RDS_FILE      = 'radio_rds_history.json'
 RTL1025_FILE  = 'radio_rtl1025_history.json'
+BIRIKINA_FILE  = 'radio_birikina_history.json'
+BRUNO_FILE     = 'radio_bruno_history.json'
+KISSKISS_FILE  = 'radio_kisskiss_history.json'
+M2O_FILE       = 'radio_m2o_history.json'
+PROPOSTAAOSTA_FILE = 'radio_propostaaosta_history.json'
 
 def load_overrides():
     if os.path.exists(OVERRIDE_FILE):
@@ -86,6 +91,11 @@ def build_combined_index():
         (ITALIA_FILE,    'Italia'),
         (RDS_FILE,       'RDS'),
         (RTL1025_FILE,   'RTL1025'),
+        (BIRIKINA_FILE,  'Birikina'),
+        (BRUNO_FILE,     'Bruno'),
+        (KISSKISS_FILE,  'Kiss Kiss'),
+        (M2O_FILE,       'm2o'),
+        (PROPOSTAAOSTA_FILE, 'Proposta Aosta'),
     ]
     for filepath, label in sources:
         partial = build_radio_index(filepath)
@@ -523,7 +533,12 @@ def main():
         TOSCANA_FILE,
         ITALIA_FILE,
         RDS_FILE,
-        RTL1025_FILE
+        RTL1025_FILE,
+        BIRIKINA_FILE,
+        BRUNO_FILE,
+        KISSKISS_FILE,
+        M2O_FILE,
+        PROPOSTAAOSTA_FILE
     ]
 
     songs_to_process = []

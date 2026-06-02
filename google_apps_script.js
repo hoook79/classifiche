@@ -65,7 +65,7 @@ function doGet(e) {
       }
 
       // Elenco completo delle radio
-      var radioKeys = ["Subasio", "Divina", "Mitology", "Nostalgia", "Toscana", "Italia", "RDS", "RTL1025"];
+      var radioKeys = ["Subasio", "Divina", "Mitology", "Nostalgia", "Toscana", "Italia", "RDS", "RTL1025", "Birikina", "Bruno", "Kisskiss", "M2o", "Propostaaosta"];
       
       for (var k = 0; k < radioKeys.length; k++) {
         var rKey = radioKeys[k];
@@ -196,7 +196,7 @@ function doPost(e) {
       updateCacheSheet(rdSheet, songKey, radioDate);
 
       // 3. Aggiorna in tempo reale le schede attive delle radio
-      var radioKeys = ["Subasio", "Divina", "Mitology", "Nostalgia", "Toscana", "Italia", "RDS", "RTL1025"];
+      var radioKeys = ["Subasio", "Divina", "Mitology", "Nostalgia", "Toscana", "Italia", "RDS", "RTL1025", "Birikina", "Bruno", "Kisskiss", "M2o", "Propostaaosta"];
       var normalizedTargetKey = normalizeKey(artist, title);
 
       for (var k = 0; k < radioKeys.length; k++) {
@@ -212,8 +212,8 @@ function doPost(e) {
           var rowTitle = data[row][2];
           
           if (normalizeKey(rowArtist, rowTitle) === normalizedTargetKey) {
-            rSheet.getCell(row + 1, 4).setValue(year);
-            rSheet.getCell(row + 1, 5).setValue(radioDate);
+            rSheet.getRange(row + 1, 4).setValue(year);
+            rSheet.getRange(row + 1, 5).setValue(radioDate);
           }
         }
       }

@@ -33,6 +33,41 @@ RADIOS = {
         'url_base': 'https://myradioonline.it/rtl-102-5/playlist',
         'label': 'RTL 102.5',
         'source': 'myradioonline'
+    },
+    'birikina': {
+        'json_db': 'radio_birikina_history.json',
+        'excel_out': 'classifica_radio_birikina_STORICO.xlsx',
+        'url_base': 'https://onlineradiobox.com/it/birikina/playlist/',
+        'label': 'Radio Birikina',
+        'source': 'onlineradiobox'
+    },
+    'bruno': {
+        'json_db': 'radio_bruno_history.json',
+        'excel_out': 'classifica_radio_bruno_STORICO.xlsx',
+        'url_base': 'https://onlineradiobox.com/it/bruno/playlist/',
+        'label': 'Radio Bruno',
+        'source': 'onlineradiobox'
+    },
+    'kisskiss': {
+        'json_db': 'radio_kisskiss_history.json',
+        'excel_out': 'classifica_radio_kisskiss_STORICO.xlsx',
+        'url_base': 'https://onlineradiobox.com/it/kisskiss/playlist/',
+        'label': 'Radio Kiss Kiss',
+        'source': 'onlineradiobox'
+    },
+    'm2o': {
+        'json_db': 'radio_m2o_history.json',
+        'excel_out': 'classifica_radio_m2o_STORICO.xlsx',
+        'url_base': 'https://myradioonline.it/m2o/playlist',
+        'label': 'Radio m2o',
+        'source': 'myradioonline'
+    },
+    'propostaaosta': {
+        'json_db': 'radio_propostaaosta_history.json',
+        'excel_out': 'classifica_radio_propostaaosta_STORICO.xlsx',
+        'url_base': 'https://onlineradiobox.com/it/propostaaosta/playlist/',
+        'label': 'Proposta Aosta',
+        'source': 'onlineradiobox'
     }
 }
 
