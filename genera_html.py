@@ -2100,9 +2100,13 @@ body.user-is-viewer .radio-date-badge {{
       <span>Posiz. Orig.</span>
     </label>
     
-    <div class="filter-input-group">
-      <span class="filter-label">Mostra:</span>
-      <input type="number" class="filter-input" id="top-input" min="1" placeholder="Tutte" oninput="applyFilters()">
+    <div class="filter-input-group" style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span class="filter-label" style="white-space: nowrap;">mostra prime</span>
+        <input type="number" class="filter-input" id="top-input" min="1" placeholder="50" oninput="applyFilters()" style="width: 60px; text-align: center;">
+        <span class="filter-label" style="white-space: nowrap;">posizioni</span>
+      </div>
+      <button class="cal-shortcut-btn" id="btn-show-all-positions" onclick="showAllPositions()" style="padding: 2px 10px; font-size: 11px; margin-top: 2px; align-self: center;">Tutte</button>
     </div>
     
     <div class="filter-input-group">
@@ -2245,6 +2249,7 @@ const RADIO_LABELS = {{
 let globalSelectedRadios = new Set(RADIO_KEYS);
 let isGlobale = true;
 let userAllowedRadios = 'all';
+let isInitialLoad = true;
 let lastFilteredSongs = [];
 
 function getNormKey(artist, title) {{
@@ -2953,11 +2958,24 @@ document.addEventListener('click', e => {{
   }}
 }});
 
+function showAllPositions() {{
+  const input = document.getElementById('top-input');
+  if (input) {{
+    input.value = '';
+    applyFilters();
+  }}
+}}
+
 function applyFilters() {{
   const q = document.getElementById('search-input').value.toLowerCase().trim();
   
   const topVal = document.getElementById('top-input').value.trim();
   const topN = (topVal && parseInt(topVal) > 0) ? parseInt(topVal) : 99999;
+  
+  const btnAll = document.getElementById('btn-show-all-positions');
+  if (btnAll) {{
+    btnAll.classList.toggle('active', !topVal);
+  }}
   
   const minPlaysVal = document.getElementById('min-plays-input').value.trim();
   const minPlays = (minPlaysVal && parseInt(minPlaysVal) > 0) ? parseInt(minPlaysVal) : 1;
@@ -3606,7 +3624,14 @@ async function fetchChartsData() {{
       
       updateUserHeaderBadge();
       updateEditPermissions();
-      switchRadio(currentRadio);
+      if (isInitialLoad) {{
+        document.getElementById('top-input').value = '50';
+        switchRadio(currentRadio);
+        selectPreset(30);
+        isInitialLoad = false;
+      }} else {{
+        switchRadio(currentRadio);
+      }}
     }} else {{
       alert("Sessione scaduta o non valida: " + result.error);
       logout();
@@ -3618,7 +3643,14 @@ async function fetchChartsData() {{
     userRole = 'user';
     updateEditPermissions();
     applyAllowedRadiosVisibility();
-    switchRadio(currentRadio);
+    if (isInitialLoad) {{
+      document.getElementById('top-input').value = '50';
+      switchRadio(currentRadio);
+      selectPreset(30);
+      isInitialLoad = false;
+    }} else {{
+      switchRadio(currentRadio);
+    }}
   }}
 }}
 
@@ -3691,7 +3723,14 @@ function initApp() {{
     userAllowedRadios = 'all';
     updateEditPermissions();
     applyAllowedRadiosVisibility();
-    switchRadio(currentRadio);
+    if (isInitialLoad) {{
+      document.getElementById('top-input').value = '50';
+      switchRadio(currentRadio);
+      selectPreset(30);
+      isInitialLoad = false;
+    }} else {{
+      switchRadio(currentRadio);
+    }}
   }}
 }}
 
