@@ -1,0 +1,7 @@
+# Ignora file di dati e database locali pesanti
+*.json
+*.xlsx
+*.log
+__pycache__/
+script_outputs/
+~$*.xlsx
