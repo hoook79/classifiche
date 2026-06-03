@@ -323,7 +323,8 @@ def build_global_canonical_mapping(song_counts, years_cache, overrides):
         raw_normalized = raw_name.replace('\ufffd', 'e')
         raw_normalized = unicodedata.normalize('NFKD', raw_normalized).encode('ASCII', 'ignore').decode('ASCII')
         
-        cleaned = re.sub(r'\s*\(\d{4}\)\s*$', '', raw_normalized).strip()
+        cleaned = re.sub(r'\s*\(\d{4}\)\s*', ' ', raw_normalized).strip()
+        cleaned = re.sub(r'\s+', ' ', cleaned)
         if ' - ' in cleaned:
             artist, title = cleaned.split(' - ', 1)
             artist = artist.strip()
@@ -376,7 +377,8 @@ def build_global_canonical_mapping(song_counts, years_cache, overrides):
         cleaned_artists.sort()
         
         # Keep original raw artist and title for canonical_to_spelling spelling mapping
-        orig_cleaned = re.sub(r'\s*\(\d{4}\)\s*$', '', raw_name).strip()
+        orig_cleaned = re.sub(r'\s*\(\d{4}\)\s*', ' ', raw_name).strip()
+        orig_cleaned = re.sub(r'\s+', ' ', orig_cleaned)
         if ' - ' in orig_cleaned:
             orig_artist, orig_title = orig_cleaned.split(' - ', 1)
             orig_artist, orig_title = orig_artist.strip(), orig_title.strip()
@@ -679,9 +681,10 @@ def process_generic_radio(history, label):
         raw = item['song'].strip()
         if is_promo(raw):
             continue
-        year_m = re.search(r'\((\d{4})\)\s*$', raw)
+        year_m = re.search(r'\((\d{4})\)', raw)
         year = year_m.group(1) if year_m else 'N/A'
-        cleaned = re.sub(r'\s*\(\d{4}\)\s*$', '', raw).strip()
+        cleaned = re.sub(r'\s*\(\d{4}\)\s*', ' ', raw).strip()
+        cleaned = re.sub(r'\s+', ' ', cleaned)
         
         norm_key = raw_to_canonical.get(item['song'], normalize_name(cleaned))
         
@@ -3487,6 +3490,7 @@ td:nth-child(2) {{
             <button class="cal-shortcut-btn" id="preset-all"       onclick="selectPreset('all')" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; border: 1px solid var(--rc-border-strong); background: #f8fafc; font-weight: 700; cursor: pointer;">Tutte</button>
             <button class="cal-shortcut-btn" id="preset-7"         onclick="selectPreset(7)" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; border: 1px solid var(--rc-border-strong); background: #f8fafc; font-weight: 700; cursor: pointer;">7 gg</button>
             <button class="cal-shortcut-btn" id="preset-30"        onclick="selectPreset(30)" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; border: 1px solid var(--rc-border-strong); background: #f8fafc; font-weight: 700; cursor: pointer;">Mese</button>
+            <button class="cal-shortcut-btn" id="preset-none"      onclick="clearDateSelection()" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; border: 1px solid var(--rc-border-strong); background: #f8fafc; font-weight: 700; cursor: pointer; color: var(--rc-red);">Azzera</button>
           </div>
           <div class="cal-nav" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <button class="cal-nav-btn" onclick="calShiftMonth(-1)" style="background: none; border: none; font-size: 18px; cursor: pointer; font-weight: bold;">&#8249;</button>
@@ -4557,9 +4561,30 @@ function selectPreset(type) {{
     select.value = type.toString();
   }}
   applyFilters();
+  updateDateBadge();
 }}
 
-function updateDateBadge() {{}}
+function updateDateBadge() {{
+  const opt = document.querySelector('#date-select option[value="custom"]');
+  if (opt) {{
+    if (selectedDates) {{
+      opt.textContent = `Selezionati (${{selectedDates.size}} gg)`;
+    }} else {{
+      opt.textContent = "Scegli dal calendario...";
+    }}
+  }}
+}}
+
+function clearDateSelection() {{
+  selectedDates = new Set();
+  const dateSelect = document.getElementById('date-select');
+  if (dateSelect) {{
+    dateSelect.value = 'custom';
+  }}
+  updateDateBadge();
+  applyFilters();
+  buildCalendar();
+}}
 
 function isSongNew(s) {{
   if (!s.radioDate || s.radioDate === 'N/A' || s.radioDate === 'N/D') return false;
