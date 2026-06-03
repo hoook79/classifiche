@@ -61,6 +61,9 @@ def normalize_name(s):
         artist_part = ''
         title_part = s.strip()
         
+    title_part = re.sub(r'^\s*\([^)]+\)\s*', '', title_part)
+    title_part = re.sub(r'\s*\([^)]+\)\s*$', '', title_part)
+        
     sep_pattern = r'\bfeat\.?\b|\bft\.?\b|\bfeaturing\b|&|\be\b|\band\b|,'
     artists = re.split(sep_pattern, artist_part)
     

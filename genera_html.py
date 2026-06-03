@@ -113,6 +113,10 @@ def normalize_name(s):
     # Strip separators followed by version keywords at the end of the title
     title_clean = re.sub(r'\s*[\-–—,/]\s*.*?' + version_kw + r'.*?$', '', title_clean, flags=re.I)
     
+    # Strip leading or trailing parenthetical parts (e.g. "(I've Had) The Time of My Life" -> "The Time of My Life")
+    title_clean = re.sub(r'^\s*\([^)]+\)\s*', '', title_clean)
+    title_clean = re.sub(r'\s*\([^)]+\)\s*$', '', title_clean)
+    
     # Strip any remaining parentheses characters but keep their contents
     title_clean = title_clean.replace('(', ' ').replace(')', ' ')
     title_clean = re.sub(r'\s+', ' ', title_clean).strip()
