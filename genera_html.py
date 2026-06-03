@@ -4556,8 +4556,10 @@ function isSongNew(s) {{
   if (parts.length === 3) {{
     const d = parseInt(parts[0]), m = parseInt(parts[1]), y = parseInt(parts[2]);
     const dateVal = new Date(y, m - 1, d);
-    const limitDate = new Date(2026, 2, 1); // Cutoff 1 Marzo 2026
-    return dateVal >= limitDate;
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const fourteenDaysAgo = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
+    return dateVal >= fourteenDaysAgo;
   }}
   return false;
 }}
