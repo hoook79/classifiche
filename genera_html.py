@@ -2971,7 +2971,6 @@ function buildCalendar() {{
   const MONTHS = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
                   'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
   lbl.textContent = MONTHS[calMonth] + ' ' + calYear;
-  const grid = document.getElementById('cal-grid');
   const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
   let dow = new Date(calYear, calMonth, 1).getDay(); // 0=dom
   dow = dow === 0 ? 6 : dow - 1; // converti a lun=0
