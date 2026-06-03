@@ -2007,6 +2007,1273 @@ body.user-is-viewer .radio-date-badge {{
   transform: none !important;
   padding: 0 !important;
 }}
+
+
+/* === RESTYLE V2 AUTOMATICALLY APPLIED === */
+/* =========================================================
+   RADIO CHARTS - RESTYLE V2
+   Incolla questo blocco ALLA FINE dello <style> esistente.
+   Se avevi già incollato altri CSS correttivi, rimuovili oppure
+   lascia questo per ultimo.
+   ========================================================= */
+
+:root {{
+  --rc-bg: #f4f7fb;
+  --rc-panel: #ffffff;
+  --rc-panel-soft: #f8fafc;
+  --rc-navy: #071124;
+  --rc-navy-2: #101a30;
+  --rc-navy-3: #17243b;
+  --rc-red: #d80b35;
+  --rc-red-dark: #b2072b;
+  --rc-teal: #0f9f90;
+  --rc-teal-dark: #0b7f74;
+  --rc-yellow: #facc15;
+  --rc-border: #e6ebf2;
+  --rc-border-strong: #d5dde8;
+  --rc-text: #0f172a;
+  --rc-muted: #64748b;
+  --rc-shadow: 0 18px 45px rgba(15, 23, 42, .10);
+  --rc-shadow-soft: 0 8px 24px rgba(15, 23, 42, .07);
+  --rc-radius: 24px;
+}}
+
+* {{
+  box-sizing: border-box;
+}}
+
+html {{
+  background: var(--rc-bg);
+}}
+
+body {{
+  background:
+    radial-gradient(circle at top left, rgba(13, 148, 136, .08), transparent 28rem),
+    linear-gradient(180deg, #f7f9fc 0%, #f2f6fb 100%) !important;
+  color: var(--rc-text);
+  overflow-x: hidden;
+}}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+header {{
+  background:
+    radial-gradient(circle at 12% 0%, rgba(216, 11, 53, .18), transparent 22rem),
+    linear-gradient(135deg, #071124 0%, #111c33 62%, #18253f 100%) !important;
+  box-shadow: 0 14px 38px rgba(3, 8, 20, .32) !important;
+  position: relative;
+  z-index: 5;
+}}
+
+.header-top {{
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px 28px 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 18px !important;
+}}
+
+.logo {{
+  min-width: 0;
+  gap: 16px !important;
+}}
+
+.logo-icon {{
+  width: 58px !important;
+  height: 58px !important;
+  border-radius: 18px !important;
+  background: linear-gradient(145deg, #e40d3d, #b8072c) !important;
+  border: 2px solid rgba(250, 204, 21, .9) !important;
+  box-shadow: 0 10px 24px rgba(216, 11, 53, .28), inset 0 1px 0 rgba(255,255,255,.28) !important;
+  font-size: 26px !important;
+  flex: 0 0 auto;
+}}
+
+.logo-text h1 {{
+  font-size: clamp(28px, 3.4vw, 42px) !important;
+  line-height: .95 !important;
+  letter-spacing: -.8px !important;
+  font-weight: 900 !important;
+}}
+
+.logo-text span {{
+  display: block;
+  margin-top: 9px;
+  font-size: clamp(12px, 1.4vw, 17px) !important;
+  letter-spacing: .24em !important;
+  opacity: .66 !important;
+  font-weight: 600 !important;
+}}
+
+.header-meta {{
+  text-align: right !important;
+  font-size: 14px !important;
+  color: rgba(255,255,255,.78) !important;
+  opacity: 1 !important;
+  line-height: 1.2 !important;
+  flex: 0 0 auto;
+}}
+
+.header-meta strong {{
+  display: block !important;
+  margin-top: 5px !important;
+  color: var(--rc-yellow) !important;
+  font-size: clamp(18px, 2vw, 25px) !important;
+  font-weight: 900 !important;
+  letter-spacing: -.3px !important;
+}}
+
+#user-badge {{
+  margin-top: 11px !important;
+  padding: 8px 14px !important;
+  border-radius: 999px !important;
+  background: rgba(255,255,255,.10) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  color: rgba(255,255,255,.86) !important;
+  font-size: 13px !important;
+  gap: 10px !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05) !important;
+}}
+
+#user-badge button {{
+  color: var(--rc-yellow) !important;
+  font-size: 12px !important;
+}}
+
+/* =========================================================
+   TAB RADIO
+   ========================================================= */
+
+.radio-tabs {{
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 28px !important;
+  border-top: 1px solid rgba(255,255,255,.08) !important;
+  display: flex !important;
+  gap: 0 !important;
+  overflow-x: auto !important;
+  white-space: nowrap !important;
+  scrollbar-width: none;
+}}
+
+.radio-tabs::-webkit-scrollbar {{
+  display: none !important;
+}}
+
+.radio-tab {{
+  position: relative;
+  padding: 18px 24px 19px !important;
+  color: rgba(255,255,255,.56) !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  letter-spacing: .045em !important;
+  border-bottom: none !important;
+  transition: color .18s ease, background .18s ease !important;
+}}
+
+.radio-tab:hover {{
+  color: rgba(255,255,255,.92) !important;
+  background: rgba(255,255,255,.035) !important;
+}}
+
+.radio-tab.active,
+.radio-tab.globale.active {{
+  color: var(--rc-yellow) !important;
+}}
+
+.radio-tab.active::after,
+.radio-tab.globale.active::after {{
+  content: "";
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 0;
+  height: 5px;
+  border-radius: 999px 999px 0 0;
+  background: var(--rc-yellow);
+  box-shadow: 0 -4px 12px rgba(250, 204, 21, .25);
+}}
+
+/* =========================================================
+   SELETTORE GLOBALE
+   ========================================================= */
+
+.global-selector-bar {{
+  max-width: 1180px;
+  margin: 18px auto 0 !important;
+  padding: 0 28px !important;
+  background: transparent !important;
+  border: 0 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}}
+
+.global-selector-bar.show {{
+  display: flex !important;
+}}
+
+.global-selector-header {{
+  width: 100%;
+  min-height: 60px;
+  padding: 14px 22px !important;
+  border-radius: 20px !important;
+  background: rgba(255,255,255,.82) !important;
+  border: 1px solid rgba(226,232,240,.95) !important;
+  box-shadow: var(--rc-shadow-soft) !important;
+}}
+
+.global-selector-summary {{
+  font-size: 17px !important;
+  color: #334155 !important;
+  font-weight: 750 !important;
+}}
+
+.global-selector-summary strong {{
+  color: var(--rc-teal) !important;
+  font-weight: 900 !important;
+}}
+
+.global-toggle-btn {{
+  padding: 8px 12px !important;
+  border-radius: 999px !important;
+  color: var(--rc-teal) !important;
+  background: rgba(15,159,144,.08) !important;
+  font-size: 14px !important;
+}}
+
+.global-selector-body.open {{
+  display: flex !important;
+  width: 100%;
+  margin-top: 12px !important;
+  padding: 18px !important;
+  border-radius: 20px !important;
+  border: 1px solid var(--rc-border) !important;
+  background: #fff !important;
+  box-shadow: var(--rc-shadow-soft) !important;
+}}
+
+.global-checkboxes {{
+  gap: 8px !important;
+}}
+
+.global-cb-wrap {{
+  border-radius: 999px !important;
+  padding: 8px 12px !important;
+  background: #f8fafc !important;
+}}
+
+/* =========================================================
+   PANNELLO FILTRI
+   ========================================================= */
+
+.filters-bar {{
+  width: min(1124px, calc(100% - 56px)) !important;
+  margin: 22px auto 28px !important;
+  padding: 26px !important;
+  border-radius: var(--rc-radius) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,255,255,.94)) !important;
+  border: 1px solid rgba(226,232,240,.92) !important;
+  box-shadow: var(--rc-shadow) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 22px !important;
+  overflow: hidden !important;
+}}
+
+.filter-row,
+.row-1,
+.row-3 {{
+  width: 100% !important;
+}}
+
+.row-1 {{
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 210px !important;
+  align-items: stretch !important;
+  gap: 18px !important;
+}}
+
+.search-box {{
+  max-width: none !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}}
+
+.search-box input {{
+  width: 100% !important;
+  height: 58px !important;
+  padding: 0 58px 0 22px !important;
+  border-radius: 17px !important;
+  border: 1.5px solid var(--rc-border-strong) !important;
+  background: #fbfdff !important;
+  color: var(--rc-text) !important;
+  font-size: 18px !important;
+  font-weight: 500 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.7) !important;
+}}
+
+.search-box input:focus {{
+  border-color: rgba(15, 159, 144, .72) !important;
+  background: #fff !important;
+  box-shadow: 0 0 0 4px rgba(15, 159, 144, .12) !important;
+}}
+
+.search-box .icon {{
+  right: 20px !important;
+  font-size: 23px !important;
+  color: #334155 !important;
+}}
+
+.export-btn,
+#export-btn {{
+  width: 100% !important;
+  height: 58px !important;
+  margin-left: 0 !important;
+  padding: 0 20px !important;
+  border-radius: 17px !important;
+  background: linear-gradient(145deg, #10a796, #078477) !important;
+  color: #fff !important;
+  border: 0 !important;
+  display: inline-flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 10px !important;
+  font-size: 18px !important;
+  font-weight: 900 !important;
+  letter-spacing: -.2px !important;
+  box-shadow: 0 12px 22px rgba(15, 159, 144, .25) !important;
+}}
+
+.export-btn:hover,
+#export-btn:hover {{
+  background: linear-gradient(145deg, #0f9f90, #07756b) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 15px 26px rgba(15, 159, 144, .32) !important;
+}}
+
+.export-icon {{
+  width: 19px !important;
+  height: 19px !important;
+}}
+
+.filter-label {{
+  display: block !important;
+  color: #475569 !important;
+  font-size: 13px !important;
+  line-height: 1.15 !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .09em !important;
+}}
+
+.filter-grid {{
+  display: grid !important;
+  grid-template-columns: minmax(360px, 1.7fr) minmax(180px, .7fr) minmax(180px, .7fr) !important;
+  align-items: start !important;
+  gap: 28px !important;
+  padding: 22px 0 24px !important;
+  border-top: 1px solid #f0f3f7 !important;
+  border-bottom: 1px solid #edf1f5 !important;
+}}
+
+.filter-section {{
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 13px !important;
+  min-width: 0 !important;
+}}
+
+.decade-chips {{
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(78px, 1fr)) !important;
+  gap: 10px !important;
+  width: 100% !important;
+}}
+
+.chip {{
+  height: 42px !important;
+  min-width: 0 !important;
+  padding: 0 12px !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #f9fbfd !important;
+  border: 1.5px solid #dbe3ee !important;
+  color: #475569 !important;
+  font-size: 15px !important;
+  font-weight: 850 !important;
+  box-shadow: 0 1px 2px rgba(15,23,42,.03) !important;
+}}
+
+.chip:hover {{
+  color: var(--rc-red) !important;
+  border-color: rgba(216, 11, 53, .40) !important;
+  background: #fff8fa !important;
+}}
+
+.chip.active {{
+  color: #fff !important;
+  background: linear-gradient(145deg, var(--rc-red), var(--rc-red-dark)) !important;
+  border-color: transparent !important;
+  box-shadow: 0 10px 18px rgba(216, 11, 53, .22) !important;
+}}
+
+.select-wrapper {{
+  width: 100% !important;
+  position: relative !important;
+}}
+
+.select-icon {{
+  left: 17px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  font-size: 18px !important;
+  z-index: 2 !important;
+}}
+
+.styled-select,
+.compact-select,
+.compact-input {{
+  width: 100% !important;
+  height: 52px !important;
+  min-width: 0 !important;
+  border-radius: 15px !important;
+  border: 1.5px solid var(--rc-border-strong) !important;
+  background-color: #fff !important;
+  color: #334155 !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,.8), 0 2px 7px rgba(15,23,42,.035) !important;
+}}
+
+.styled-select {{
+  padding: 0 42px 0 48px !important;
+}}
+
+.compact-select {{
+  padding: 0 38px 0 15px !important;
+}}
+
+.compact-input {{
+  padding: 0 15px !important;
+}}
+
+.styled-select:focus,
+.compact-select:focus,
+.compact-input:focus {{
+  border-color: rgba(15, 159, 144, .70) !important;
+  box-shadow: 0 0 0 4px rgba(15, 159, 144, .12) !important;
+}}
+
+.styled-select.text-red {{
+  color: var(--rc-red) !important;
+  border-color: rgba(216, 11, 53, .28) !important;
+  background-color: #fffafb !important;
+}}
+
+/* Controlli avanzati: diventano mini-card ordinate */
+.row-3 {{
+  display: grid !important;
+  grid-template-columns: 1.15fr 1fr 1fr 1fr auto !important;
+  gap: 14px !important;
+  align-items: stretch !important;
+  flex-wrap: initial !important;
+  padding-top: 0 !important;
+}}
+
+.adv-group {{
+  min-width: 0 !important;
+  padding: 15px !important;
+  border-radius: 18px !important;
+  background: #f8fafc !important;
+  border: 1px solid #edf1f5 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  gap: 11px !important;
+}}
+
+.toggle-group {{
+  justify-content: center !important;
+}}
+
+.toggle-wrap {{
+  width: fit-content !important;
+  gap: 0 !important;
+}}
+
+.toggle-switch {{
+  width: 52px !important;
+  height: 30px !important;
+  background: #cbd5e1 !important;
+  border: 1px solid rgba(148,163,184,.35) !important;
+  box-shadow: inset 0 1px 3px rgba(15,23,42,.12) !important;
+}}
+
+.toggle-switch::after {{
+  top: 2px !important;
+  left: 2px !important;
+  width: 24px !important;
+  height: 24px !important;
+}}
+
+.toggle-wrap input:checked + .toggle-switch {{
+  background: var(--rc-teal) !important;
+}}
+
+.toggle-wrap input:checked + .toggle-switch::after {{
+  transform: translateX(22px) !important;
+}}
+
+.top-group > div {{
+  width: 100% !important;
+  display: block !important;
+}}
+
+#btn-show-all-positions,
+.cal-shortcut-btn {{
+  display: none !important;
+}}
+
+.results-count-wrap {{
+  min-width: 120px !important;
+  margin-left: 0 !important;
+  padding: 15px !important;
+  border-radius: 18px !important;
+  background: rgba(15,159,144,.08) !important;
+  border: 1px solid rgba(15,159,144,.16) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}}
+
+.results-count {{
+  color: var(--rc-teal-dark) !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  text-align: center !important;
+  line-height: 1.25 !important;
+}}
+
+/* =========================================================
+   CLASSIFICA DESKTOP
+   ========================================================= */
+
+.table-wrap {{
+  width: min(1124px, calc(100% - 56px)) !important;
+  margin: 0 auto 46px !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}}
+
+table {{
+  width: 100% !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  background: #fff !important;
+  border-radius: 22px !important;
+  overflow: hidden !important;
+  box-shadow: var(--rc-shadow) !important;
+  border: 1px solid rgba(226,232,240,.90) !important;
+}}
+
+thead tr {{
+  background: linear-gradient(135deg, #071124, #111b31) !important;
+}}
+
+thead th {{
+  height: 62px !important;
+  padding: 18px 22px !important;
+  color: #fff !important;
+  font-size: 14px !important;
+  font-weight: 900 !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+  border-right: 1px solid rgba(255,255,255,.06) !important;
+}}
+
+thead th:last-child {{
+  border-right: 0 !important;
+}}
+
+tbody tr {{
+  background: #fff !important;
+  border-bottom: 1px solid var(--rc-border) !important;
+  transition: background .18s ease, transform .18s ease, box-shadow .18s ease !important;
+}}
+
+tbody tr:hover {{
+  background: #fbfdff !important;
+}}
+
+tbody tr:last-child {{
+  border-bottom: 0 !important;
+}}
+
+td {{
+  padding: 18px 22px !important;
+  vertical-align: middle !important;
+}}
+
+.pos-cell {{
+  width: 112px !important;
+  text-align: left !important;
+  padding-right: 12px !important;
+}}
+
+.pos-cell > div {{
+  justify-content: flex-start !important;
+  gap: 12px !important;
+}}
+
+.pos-badge {{
+  width: 48px !important;
+  height: 48px !important;
+  font-size: 18px !important;
+  font-weight: 950 !important;
+  box-shadow: 0 6px 14px rgba(15,23,42,.12) !important;
+}}
+
+.pos-1 {{
+  background: linear-gradient(145deg, #ffd84a, #ffb800) !important;
+  color: #5d4200 !important;
+}}
+
+.pos-2 {{
+  background: linear-gradient(145deg, #e5e7eb, #b8c0cc) !important;
+  color: #334155 !important;
+}}
+
+.pos-3 {{
+  background: linear-gradient(145deg, #df8a42, #b85e20) !important;
+  color: #fff !important;
+}}
+
+.pos-top10,
+.pos-rest {{
+  background: #eef2f7 !important;
+  color: #475569 !important;
+}}
+
+.trend {{
+  border-radius: 999px !important;
+  padding: 5px 8px !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+}}
+
+td:nth-child(2) {{
+  min-width: 0 !important;
+}}
+
+.song-artist {{
+  color: #0f172a !important;
+  font-size: 18px !important;
+  line-height: 1.16 !important;
+  font-weight: 950 !important;
+  letter-spacing: -.25px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}}
+
+.song-artist > span {{
+  min-width: 0 !important;
+}}
+
+.song-title {{
+  margin-top: 7px !important;
+  color: #64748b !important;
+  font-size: 15px !important;
+  font-weight: 550 !important;
+}}
+
+.song-year {{
+  margin-left: 9px !important;
+  padding: 5px 11px !important;
+  border-radius: 10px !important;
+  background: #eef2ff !important;
+  border: 1px solid #dbe3ff !important;
+  color: #3446b4 !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+}}
+
+.play-btn {{
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(145deg, var(--rc-red), var(--rc-red-dark)) !important;
+  color: #fff !important;
+  font-size: 16px !important;
+  box-shadow: 0 9px 18px rgba(216, 11, 53, .22) !important;
+  flex: 0 0 auto !important;
+}}
+
+.play-btn:hover {{
+  transform: translateY(-1px) scale(1.04) !important;
+  box-shadow: 0 12px 22px rgba(216, 11, 53, .30) !important;
+}}
+
+.radio-date-cell {{
+  width: 170px !important;
+  text-align: center !important;
+}}
+
+.radio-date-badge {{
+  min-width: 128px !important;
+  justify-content: center !important;
+  padding: 11px 13px !important;
+  border-radius: 14px !important;
+  background: rgba(15, 159, 144, .08) !important;
+  border: 1px solid rgba(15, 159, 144, .16) !important;
+  color: #0f8d81 !important;
+  font-size: 15px !important;
+  font-weight: 900 !important;
+}}
+
+.plays-cell {{
+  width: 150px !important;
+  text-align: right !important;
+}}
+
+.plays-num {{
+  color: var(--rc-red) !important;
+  font-size: 25px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: -.4px !important;
+}}
+
+.plays-lbl {{
+  margin-top: 5px !important;
+  color: #64748b !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: .04em !important;
+}}
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 980px) {{
+  .filter-grid {{
+    grid-template-columns: 1fr 1fr !important;
+  }}
+
+  .decennio-section {{
+    grid-column: 1 / -1 !important;
+  }}
+
+  .decade-chips {{
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }}
+
+  .row-3 {{
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }}
+
+  .results-count-wrap {{
+    grid-column: 1 / -1 !important;
+    min-height: 52px !important;
+  }}
+}}
+
+/* =========================================================
+   MOBILE - layout verticale vero, niente colonne rotte
+   ========================================================= */
+
+@media (max-width: 768px) {{
+  body {{
+    background: #f4f7fb !important;
+  }}
+
+  .header-top {{
+    padding: 18px 16px 16px !important;
+    align-items: flex-start !important;
+  }}
+
+  .logo-icon {{
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 15px !important;
+    font-size: 22px !important;
+  }}
+
+  .logo-text h1 {{
+    font-size: 27px !important;
+  }}
+
+  .logo-text span {{
+    margin-top: 7px !important;
+    font-size: 12px !important;
+    letter-spacing: .20em !important;
+  }}
+
+  .header-meta {{
+    min-width: 112px !important;
+    font-size: 12px !important;
+  }}
+
+  .header-meta strong {{
+    font-size: 16px !important;
+    line-height: 1.12 !important;
+  }}
+
+  #user-badge {{
+    padding: 6px 9px !important;
+    font-size: 11px !important;
+    gap: 6px !important;
+  }}
+
+  .radio-tabs {{
+    padding: 0 12px !important;
+  }}
+
+  .radio-tab {{
+    padding: 14px 16px 16px !important;
+    font-size: 13px !important;
+  }}
+
+  .radio-tab.active::after,
+  .radio-tab.globale.active::after {{
+    left: 12px !important;
+    right: 12px !important;
+    height: 4px !important;
+  }}
+
+  .global-selector-bar {{
+    width: auto !important;
+    margin: 14px 10px 0 !important;
+    padding: 0 !important;
+  }}
+
+  .global-selector-header {{
+    min-height: 54px !important;
+    padding: 12px 14px !important;
+    border-radius: 17px !important;
+  }}
+
+  .global-selector-summary {{
+    font-size: 15px !important;
+  }}
+
+  .global-toggle-btn {{
+    font-size: 12px !important;
+    padding: 7px 9px !important;
+  }}
+
+  .global-selector-body.open {{
+    padding: 14px !important;
+    gap: 12px !important;
+  }}
+
+  .global-checkboxes-container,
+  .global-checkboxes {{
+    width: 100% !important;
+  }}
+
+  .global-cb-wrap {{
+    font-size: 12px !important;
+    padding: 7px 10px !important;
+  }}
+
+  .filters-bar {{
+    width: auto !important;
+    margin: 16px 10px 18px !important;
+    padding: 15px !important;
+    border-radius: 22px !important;
+    gap: 16px !important;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, .09) !important;
+  }}
+
+  .row-1 {{
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }}
+
+  .search-box input {{
+    height: 54px !important;
+    border-radius: 16px !important;
+    font-size: 16px !important;
+    padding-left: 18px !important;
+    padding-right: 50px !important;
+  }}
+
+  .search-box .icon {{
+    right: 17px !important;
+    font-size: 20px !important;
+  }}
+
+  .export-btn,
+  #export-btn {{
+    height: 52px !important;
+    border-radius: 16px !important;
+    font-size: 16px !important;
+  }}
+
+  .filter-grid {{
+    grid-template-columns: 1fr 1fr !important;
+    gap: 15px !important;
+    padding: 16px 0 !important;
+  }}
+
+  .decennio-section {{
+    grid-column: 1 / -1 !important;
+  }}
+
+  .filter-section {{
+    gap: 10px !important;
+  }}
+
+  .filter-label {{
+    font-size: 12px !important;
+    letter-spacing: .075em !important;
+  }}
+
+  .decade-chips {{
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }}
+
+  .chip {{
+    height: 38px !important;
+    padding: 0 8px !important;
+    font-size: 14px !important;
+  }}
+
+  .styled-select,
+  .compact-select,
+  .compact-input {{
+    height: 48px !important;
+    border-radius: 14px !important;
+    font-size: 14px !important;
+  }}
+
+  .styled-select {{
+    padding-left: 40px !important;
+    padding-right: 34px !important;
+  }}
+
+  .select-icon {{
+    left: 14px !important;
+    font-size: 16px !important;
+  }}
+
+  .row-3 {{
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }}
+
+  .adv-group {{
+    padding: 12px !important;
+    border-radius: 16px !important;
+    gap: 9px !important;
+  }}
+
+  .toggle-group {{
+    grid-column: 1 / -1 !important;
+    min-height: 76px !important;
+  }}
+
+  .toggle-group .toggle-wrap {{
+    margin-top: 2px !important;
+  }}
+
+  .toggle-switch {{
+    width: 48px !important;
+    height: 28px !important;
+  }}
+
+  .toggle-switch::after {{
+    width: 22px !important;
+    height: 22px !important;
+  }}
+
+  .toggle-wrap input:checked + .toggle-switch::after {{
+    transform: translateX(20px) !important;
+  }}
+
+  .results-count-wrap {{
+    grid-column: 1 / -1 !important;
+    min-height: 48px !important;
+    padding: 12px !important;
+  }}
+
+  .results-count {{
+    font-size: 12px !important;
+  }}
+
+  /* Mobile classifica: trasformo la tabella in card verticali */
+  .table-wrap {{
+    width: auto !important;
+    margin: 0 10px 34px !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }}
+
+  table,
+  thead,
+  tbody,
+  tr,
+  td {{
+    display: block !important;
+  }}
+
+  table {{
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }}
+
+  thead {{
+    display: none !important;
+  }}
+
+  tbody {{
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }}
+
+  tbody tr {{
+    display: grid !important;
+    grid-template-columns: 58px minmax(0, 1fr) auto !important;
+    grid-template-areas:
+      "pos song plays"
+      "pos date date" !important;
+    gap: 8px 12px !important;
+    padding: 14px !important;
+    border: 1px solid rgba(226,232,240,.94) !important;
+    border-radius: 19px !important;
+    background: #fff !important;
+    box-shadow: 0 8px 22px rgba(15,23,42,.065) !important;
+  }}
+
+  tbody tr.top1 {{
+    background: linear-gradient(90deg, rgba(250,204,21,.12), #fff 34%) !important;
+  }}
+
+  tbody tr.top2 {{
+    background: linear-gradient(90deg, rgba(148,163,184,.12), #fff 34%) !important;
+  }}
+
+  tbody tr.top3 {{
+    background: linear-gradient(90deg, rgba(205,127,50,.12), #fff 34%) !important;
+  }}
+
+  tbody td {{
+    padding: 0 !important;
+    width: auto !important;
+    min-width: 0 !important;
+  }}
+
+  .pos-cell {{
+    grid-area: pos !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+  }}
+
+  .pos-cell > div {{
+    flex-direction: column !important;
+    gap: 8px !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+  }}
+
+  .pos-cell > div > div:last-child {{
+    width: auto !important;
+  }}
+
+  .pos-badge {{
+    width: 48px !important;
+    height: 48px !important;
+    font-size: 18px !important;
+  }}
+
+  td:nth-child(2) {{
+    grid-area: song !important;
+    padding: 0 !important;
+    padding-right: 0 !important;
+    position: relative !important;
+  }}
+
+  .song-artist {{
+    width: 100% !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+    font-size: 17px !important;
+    line-height: 1.14 !important;
+  }}
+
+  .song-artist > span {{
+    display: block !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    overflow-wrap: anywhere !important;
+  }}
+
+  .song-title {{
+    margin-top: 6px !important;
+    font-size: 14px !important;
+  }}
+
+  .song-year {{
+    display: inline-flex !important;
+    margin-left: 0 !important;
+    margin-top: 7px !important;
+    width: fit-content !important;
+    padding: 4px 9px !important;
+    font-size: 12px !important;
+    border-radius: 9px !important;
+  }}
+
+  .play-btn {{
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 15px !important;
+    margin-left: auto !important;
+    margin-top: 0 !important;
+  }}
+
+  .radio-date-cell {{
+    grid-area: date !important;
+    text-align: left !important;
+    width: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+  }}
+
+  .radio-date-badge {{
+    min-width: 0 !important;
+    width: fit-content !important;
+    padding: 9px 11px !important;
+    border-radius: 12px !important;
+    font-size: 13px !important;
+  }}
+
+  .plays-cell {{
+    grid-area: plays !important;
+    width: auto !important;
+    min-width: 78px !important;
+    text-align: right !important;
+    align-self: start !important;
+  }}
+
+  .plays-num {{
+    font-size: 22px !important;
+  }}
+
+  .plays-lbl {{
+    font-size: 10px !important;
+  }}
+
+  .trend {{
+    font-size: 10px !important;
+    padding: 4px 7px !important;
+  }}
+}}
+
+/* =========================================================
+   MOBILE MOLTO STRETTO
+   ========================================================= */
+
+@media (max-width: 430px) {{
+  .header-top {{
+    gap: 10px !important;
+  }}
+
+  .logo {{
+    gap: 9px !important;
+  }}
+
+  .logo-icon {{
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 13px !important;
+    font-size: 19px !important;
+  }}
+
+  .logo-text h1 {{
+    font-size: 23px !important;
+  }}
+
+  .logo-text span {{
+    font-size: 10px !important;
+    letter-spacing: .18em !important;
+  }}
+
+  .header-meta {{
+    font-size: 11px !important;
+    min-width: 100px !important;
+  }}
+
+  .header-meta strong {{
+    font-size: 14px !important;
+  }}
+
+  #user-badge span {{
+    max-width: 78px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }}
+
+  .decade-chips {{
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }}
+
+  .filter-grid {{
+    grid-template-columns: 1fr !important;
+  }}
+
+  .data-section,
+  .orario-section {{
+    grid-column: auto !important;
+  }}
+
+  .row-3 {{
+    grid-template-columns: 1fr !important;
+  }}
+
+  .toggle-group,
+  .results-count-wrap {{
+    grid-column: auto !important;
+  }}
+
+  tbody tr {{
+    grid-template-columns: 52px minmax(0, 1fr) !important;
+    grid-template-areas:
+      "pos song"
+      "pos plays"
+      "pos date" !important;
+  }}
+
+  .plays-cell {{
+    text-align: left !important;
+    display: flex !important;
+    align-items: baseline !important;
+    gap: 6px !important;
+  }}
+
+  .plays-lbl {{
+    margin-top: 0 !important;
+  }}
+}}
+
 </style>
 </head>
 <body>
