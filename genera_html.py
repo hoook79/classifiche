@@ -3539,6 +3539,12 @@ td:nth-child(2) {{
   </div>
 </div>
 
+<!-- Banner Confronto Playlist -->
+<div id="compare-active-banner" style="display:none; align-items:center; justify-content:space-between; background:rgba(79, 70, 229, 0.08); border:1.5px dashed #4f46e5; border-radius:12px; padding:12px 18px; margin-bottom:16px; font-size:13.5px; font-weight:700; color:#4f46e5; gap: 12px; flex-wrap: wrap;">
+  <span style="display: flex; align-items: center; gap: 8px;">🔍 <span>Confronto Playlist Attivo: vengono mostrati solo i brani dell'export non presenti in <strong><span id="compare-banner-radio-name">...</span></strong></span></span>
+  <button onclick="clearPlaylistComparison()" style="background:#4f46e5; color:#fff; border:none; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer; transition: all 0.2s; box-shadow: 0 2px 6px rgba(79,70,229,0.3);">Disattiva Filtro</button>
+</div>
+
 <div class="table-wrap">
   <table>
     <thead>
@@ -3765,6 +3771,8 @@ let allDates = [];
 let selectedDates = null;  // null = tutte le date; Set = date selezionate
 let currentSort = [{{col:'plays', dir:'desc'}}];
 let activeDecade = 'all';
+let comparisonMissingKeys = null;
+let comparisonDestinationRadio = null;
 
 const RADIO_KEYS = ['subasio','divina','mitology','nostalgia','toscana','italia','rds','rtl1025','birikina','bruno','kisskiss','m2o','propostaaosta','capital'];
 const RADIO_LABELS = {{
@@ -4621,6 +4629,7 @@ function applyFilters() {{
 
   // 4. Filtra i brani per ricerca, decennio, e posizioni
   let filtered = periodRanked.filter(s => {{
+    if(comparisonMissingKeys && !comparisonMissingKeys.has(getNormKey(s.artist, s.title))) return false;
     if((selectedDates || selectedHours) && s._filtTotal === 0) return false;
     if(s._filtTotal < minPlays) return false;
     if(q && !`${{s.artist}} ${{s.title}}`.toLowerCase().includes(q)) return false;
@@ -5704,30 +5713,46 @@ async function runPlaylistComparison() {{
     }}
   }});
 
-  // Salva i risultati per l'esportazione
-  lastCompareMissingSongs = missingSongs;
-
-  // Ordina alfabeticamente per artista
-  missingSongs.sort((a,b) => a.artist.localeCompare(b.artist));
-
-  // Renderizza la tabella dei risultati
-  const tbody = document.getElementById('compare-results-tbody');
-  tbody.innerHTML = '';
-  
   if (missingSongs.length === 0) {{
-    tbody.innerHTML = `<tr><td colspan="2" style="text-align:center; padding:20px; font-weight:600; color:var(--rc-muted);">Tutte le canzoni dell'export sono già presenti nella tua radio! 🎉</td></tr>`;
-    document.getElementById('compare-export-csv').style.display = 'none';
-  }} else {{
-    missingSongs.forEach(s => {{
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td style="padding:8px 10px; border-bottom:1px solid var(--rc-border); font-weight:700;">${{s.artist}}</td><td style="padding:8px 10px; border-bottom:1px solid var(--rc-border);">${{s.title}}</td>`;
-      tbody.appendChild(tr);
-    }});
-    document.getElementById('compare-export-csv').style.display = 'inline-block';
+    alert("Tutte le canzoni dell'export sono già presenti nella tua radio! 🎉");
+    return;
   }}
 
-  document.getElementById('compare-results-title').textContent = `${{missingSongs.length}} brani mancanti`;
-  document.getElementById('compare-results-area').style.display = 'block';
+  // Imposta i filtri globali per il confronto
+  comparisonMissingKeys = addedKeys;
+  comparisonDestinationRadio = myRadioKey;
+
+  // Mostra il banner in cima alla tabella
+  const banner = document.getElementById('compare-active-banner');
+  if (banner) {{
+    banner.style.display = 'flex';
+    document.getElementById('compare-banner-radio-name').textContent = RADIO_LABELS[myRadioKey] || myRadioKey;
+  }}
+
+  // Chiudi il modal
+  closeCompareModalDirect();
+
+  // Cambia radio attiva sulla pagina principale:
+  // Se la sorgente è un'altra radio, mostra quella.
+  // Altrimenti, mostra la vista globale.
+  if (sourceRadioKey) {{
+    switchRadio(sourceRadioKey);
+  }} else {{
+    switchRadio('globale');
+  }}
+
+  // Applica i filtri per visualizzare i brani nella schermata principale
+  applyFilters();
+}}
+
+function clearPlaylistComparison() {{
+  comparisonMissingKeys = null;
+  comparisonDestinationRadio = null;
+  const banner = document.getElementById('compare-active-banner');
+  if (banner) {{
+    banner.style.display = 'none';
+  }}
+  applyFilters();
 }}
 
 function parseExportSongs(text) {{
