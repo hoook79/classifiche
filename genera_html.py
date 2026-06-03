@@ -3054,6 +3054,24 @@ function onDateSelectChange(val) {{
   }}
 }}
 
+function selectPreset(type) {{
+  const now = new Date(); now.setHours(0,0,0,0);
+  if (type === 'all') {{
+    selectedDates = null;
+  }} else if (typeof type === 'number') {{
+    const cutoff = new Date(now.getTime() - (type-1)*86400000);
+    const sel = allDates.filter(d => {{ const dt = ddmmToDate(d); return dt >= cutoff && dt <= now; }});
+    selectedDates = new Set(sel);
+  }}
+  const select = document.getElementById('date-select');
+  if (select) {{
+    select.value = type.toString();
+  }}
+  applyFilters();
+}}
+
+function updateDateBadge() {{}}
+
 function isSongNew(s) {{
   if (!s.radioDate || s.radioDate === 'N/A' || s.radioDate === 'N/D') return false;
   const parts = s.radioDate.split('/');
@@ -3081,9 +3099,9 @@ document.addEventListener('click', e => {{
 }});
 
 function showAllPositions() {{
-  const input = document.getElementById('top-input');
-  if (input) {{
-    input.value = '';
+  const select = document.getElementById('top-select');
+  if (select) {{
+    select.value = 'all';
     applyFilters();
   }}
 }}
