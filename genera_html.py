@@ -2537,7 +2537,6 @@ header {{
   display: block !important;
 }}
 
-#btn-show-all-positions,
 .cal-shortcut-btn {{
   display: none !important;
 }}
@@ -3526,6 +3525,7 @@ td:nth-child(2) {{
       <span style="font-size: 13px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: .09em; white-space: nowrap;">PRIME</span>
       <input type="number" id="top-input" min="1" value="50" class="compact-input" style="width: 80px !important; text-align: center !important; height: 38px !important; padding: 0 !important; font-weight: 800 !important;" oninput="applyFilters()">
       <span style="font-size: 13px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: .09em; white-space: nowrap;">POSIZIONI</span>
+      <button id="btn-show-all-positions" onclick="showAllPositions()" style="padding:6px 12px; font-size:12px; font-weight:700; border-radius:8px; border:1.5px solid var(--rc-border-strong); background:#f8fafc; cursor:pointer; margin-left: 8px; transition: all 0.2s; height: 38px;">Tutte</button>
     </div>
 
     <div class="adv-group min-plays-group">
@@ -4583,7 +4583,15 @@ function applyFilters() {{
   
   const btnAll = document.getElementById('btn-show-all-positions');
   if (btnAll) {{
-    btnAll.classList.toggle('active', !topVal);
+    if (!topVal) {{
+      btnAll.style.background = '#0d9488';
+      btnAll.style.color = '#fff';
+      btnAll.style.borderColor = '#0d9488';
+    }} else {{
+      btnAll.style.background = '#f8fafc';
+      btnAll.style.color = 'var(--rc-text)';
+      btnAll.style.borderColor = 'var(--rc-border-strong)';
+    }}
   }}
   
   const minPlaysVal = document.getElementById('min-plays-input').value.trim();
@@ -4682,9 +4690,7 @@ function applyFilters() {{
 
   lastFilteredSongs = filtered;
   
-  // Reset lazy loading limit
-  visibleCount = Math.min(50, currentLimit);
-  const shown = filtered.slice(0, Math.min(visibleCount, currentLimit));
+  const shown = filtered.slice(0, currentLimit);
   
   document.getElementById('results-count').textContent = `${{shown.length}} / ${{filtered.length}} brani`;
   renderTable(shown);
