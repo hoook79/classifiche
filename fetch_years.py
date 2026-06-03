@@ -27,6 +27,7 @@ BRUNO_FILE     = 'radio_bruno_history.json'
 KISSKISS_FILE  = 'radio_kisskiss_history.json'
 M2O_FILE       = 'radio_m2o_history.json'
 PROPOSTAAOSTA_FILE = 'radio_propostaaosta_history.json'
+CAPITAL_FILE     = 'radio_capital_history.json'
 
 def load_overrides():
     if os.path.exists(OVERRIDE_FILE):
@@ -96,6 +97,7 @@ def build_combined_index():
         (KISSKISS_FILE,  'Kiss Kiss'),
         (M2O_FILE,       'm2o'),
         (PROPOSTAAOSTA_FILE, 'Proposta Aosta'),
+        (CAPITAL_FILE,       'Capital'),
     ]
     for filepath, label in sources:
         partial = build_radio_index(filepath)
@@ -538,7 +540,8 @@ def main():
         BRUNO_FILE,
         KISSKISS_FILE,
         M2O_FILE,
-        PROPOSTAAOSTA_FILE
+        PROPOSTAAOSTA_FILE,
+        CAPITAL_FILE
     ]
 
     songs_to_process = []

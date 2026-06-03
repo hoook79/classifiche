@@ -68,6 +68,13 @@ RADIOS = {
         'url_base': 'https://onlineradiobox.com/it/propostaaosta/playlist/',
         'label': 'Proposta Aosta',
         'source': 'onlineradiobox'
+    },
+    'capital': {
+        'json_db': 'radio_capital_history.json',
+        'excel_out': 'classifica_radio_capital_STORICO.xlsx',
+        'url_base': 'https://myradioonline.it/radio-capital/playlist',
+        'label': 'Radio Capital',
+        'source': 'myradioonline'
     }
 }
 
@@ -162,6 +169,27 @@ def scrape_day_myradioonline(url_base, label, offset=0):
                 title = title_el.get_text(strip=True)
                 time_text = time_el.get_text(strip=True)
                 
+                # Se il titolo è vuoto, proviamo a dividere il campo artist (che per m2o contiene la stringa unita)
+                if not title and artist:
+                    words = artist.split()
+                    artist_start_idx = len(words)
+                    
+                    def is_uppercase_word(w):
+                        clean_w = re.sub(r'[^a-zA-Z0-9]', '', w)
+                        if not clean_w:
+                            return True
+                        return clean_w.isupper()
+                        
+                    for i in range(len(words) - 1, -1, -1):
+                        if is_uppercase_word(words[i]):
+                            artist_start_idx = i
+                        else:
+                            break
+                            
+                    if 0 < artist_start_idx < len(words):
+                        title = " ".join(words[:artist_start_idx]).strip()
+                        artist = " ".join(words[artist_start_idx:]).strip()
+                
                 # Estrai ora e data
                 m = re.search(r'(\d{2}\.\d{2})\s+(\d{2}:\d{2})', time_text)
                 if m:
@@ -169,7 +197,10 @@ def scrape_day_myradioonline(url_base, label, offset=0):
                     time_val = m.group(2)
                     
                     if date_val == expected_date_str:
-                        song_name = f"{artist.upper()} - {title.upper()}"
+                        if title:
+                            song_name = f"{artist.upper()} - {title.upper()}"
+                        else:
+                            song_name = artist.upper()
                         extracted_data.append({
                             "date": date_val,
                             "time": time_val,

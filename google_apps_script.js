@@ -65,7 +65,7 @@ function doGet(e) {
       }
 
       // Elenco completo delle radio
-      var radioKeys = ["Subasio", "Divina", "Mitology", "Nostalgia", "Toscana", "Italia", "RDS", "RTL1025", "Birikina", "Bruno", "Kisskiss", "M2o", "Propostaaosta"];
+      var radioKeys = ["Subasio", "Divina", "Mitology", "Nostalgia", "Toscana", "Italia", "RDS", "RTL1025", "Birikina", "Bruno", "Kisskiss", "M2o", "Propostaaosta", "Capital"];
       
       for (var k = 0; k < radioKeys.length; k++) {
         var rKey = radioKeys[k];
@@ -196,7 +196,7 @@ function doPost(e) {
       updateCacheSheet(rdSheet, songKey, radioDate);
 
       // 3. Aggiorna in tempo reale le schede attive delle radio
-      var radioKeys = ["Subasio", "Divina", "Mitology", "Nostalgia", "Toscana", "Italia", "RDS", "RTL1025", "Birikina", "Bruno", "Kisskiss", "M2o", "Propostaaosta"];
+      var radioKeys = ["Subasio", "Divina", "Mitology", "Nostalgia", "Toscana", "Italia", "RDS", "RTL1025", "Birikina", "Bruno", "Kisskiss", "M2o", "Propostaaosta", "Capital"];
       var normalizedTargetKey = normalizeKey(artist, title);
 
       for (var k = 0; k < radioKeys.length; k++) {

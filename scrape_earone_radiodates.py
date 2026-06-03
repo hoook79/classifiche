@@ -31,7 +31,8 @@ HISTORY_FILES = [
     'radio_bruno_history.json',
     'radio_kisskiss_history.json',
     'radio_m2o_history.json',
-    'radio_propostaaosta_history.json'
+    'radio_propostaaosta_history.json',
+    'radio_capital_history.json'
 ]
 
 # Service/promo keywords to exclude
@@ -41,7 +42,7 @@ exclude_keywords = [
     'SRS ', 'SPONSOR',
     'RADIO DIVINA', 'RADIO MITOLOGY', 'RADIO NOSTALGIA', 'RADIO TOSCANA',
     'RADIO ITALIA', 'RDS', 'RTL 102.5', 'RTL1025',
-    'BIRIKINA', 'RADIO BRUNO', 'KISS KISS', 'KISSKISS', 'M2O', 'PROPOSTA AOSTA',
+    'BIRIKINA', 'RADIO BRUNO', 'KISS KISS', 'KISSKISS', 'M2O', 'PROPOSTA AOSTA', 'RADIO CAPITAL', 'CAPITAL',
     'VOCALE', 'WHATSAPP', 'SMS', 'CHIAMA', 'DIRETTA', 'METEO',
     'TRAFFICO', 'NOTIZIARIO', '338 63 60 114', '3386360114',
     'COMING SOON', 'CINEMA', 'PREVISIONI'

@@ -114,7 +114,8 @@ def upload_rankings(all_radio_data):
             "bruno": "Bruno",
             "kisskiss": "Kisskiss",
             "m2o": "M2o",
-            "propostaaosta": "Propostaaosta"
+            "propostaaosta": "Propostaaosta",
+            "capital": "Capital"
         }
 
         for radio_key, data in all_radio_data.items():

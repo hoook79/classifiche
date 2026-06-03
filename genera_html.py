@@ -29,6 +29,7 @@ BRUNO_JSON     = os.path.join(BASE, 'radio_bruno_history.json')
 KISSKISS_JSON  = os.path.join(BASE, 'radio_kisskiss_history.json')
 M2O_JSON       = os.path.join(BASE, 'radio_m2o_history.json')
 PROPOSTAAOSTA_JSON = os.path.join(BASE, 'radio_propostaaosta_history.json')
+CAPITAL_JSON   = os.path.join(BASE, 'radio_capital_history.json')
 CACHE_YEARS    = os.path.join(BASE, 'song_years_cache.json')
 CACHE_OVERRIDES = os.path.join(BASE, 'manual_years_override.json')
 CACHE_RADIODATES = os.path.join(BASE, 'song_radiodates_cache.json')
@@ -506,6 +507,11 @@ if os.path.exists(PROPOSTAAOSTA_JSON):
     with open(PROPOSTAAOSTA_JSON, 'r', encoding='utf-8') as f:
         propostaaosta_history = json.load(f)
 
+capital_history = []
+if os.path.exists(CAPITAL_JSON):
+    with open(CAPITAL_JSON, 'r', encoding='utf-8') as f:
+        capital_history = json.load(f)
+
 years_cache = {}
 if os.path.exists(CACHE_YEARS):
     with open(CACHE_YEARS, 'r', encoding='utf-8') as f:
@@ -547,7 +553,7 @@ normalized_radiodates_cache = {normalize_name(k): v for k, v in radiodates_cache
 # Costruzione mappatura canonica globale per unire i doppioni
 print("Costruzione mappatura canonica globale per rimuovere doppioni...")
 global_song_counts = Counter()
-for history in [subasio_history, divina_history, mitology_history, nostalgia_history, toscana_history, italia_history, rds_history, rtl1025_history, birikina_history, bruno_history, kisskiss_history, m2o_history, propostaaosta_history]:
+for history in [subasio_history, divina_history, mitology_history, nostalgia_history, toscana_history, italia_history, rds_history, rtl1025_history, birikina_history, bruno_history, kisskiss_history, m2o_history, propostaaosta_history, capital_history]:
     for item in history:
         global_song_counts[item['song']] += 1
 
@@ -740,6 +746,9 @@ m2o_ranked, m2o_dates_sorted = process_generic_radio(m2o_history, "Radio m2o")
 print("Elaborazione Proposta Aosta...")
 propostaaosta_ranked, propostaaosta_dates_sorted = process_generic_radio(propostaaosta_history, "Proposta Aosta")
 
+print("Elaborazione Radio Capital...")
+capital_ranked, capital_dates_sorted = process_generic_radio(capital_history, "Radio Capital")
+
 # ── Serializza JSON per HTML ──────────────────────────────────────────────────
 def make_radio_data(ranked, dates_sorted):
     songs_out = []
@@ -786,6 +795,7 @@ raw_bruno     = make_radio_data(bruno_ranked,     bruno_dates_sorted)
 raw_kisskiss  = make_radio_data(kisskiss_ranked,  kisskiss_dates_sorted)
 raw_m2o       = make_radio_data(m2o_ranked,       m2o_dates_sorted)
 raw_propostaaosta = make_radio_data(propostaaosta_ranked, propostaaosta_dates_sorted)
+raw_capital   = make_radio_data(capital_ranked,   capital_dates_sorted)
 
 # Tenta di caricare le classifiche calcolate su Google Sheets
 try:
@@ -803,7 +813,8 @@ try:
         'bruno': raw_bruno,
         'kisskiss': raw_kisskiss,
         'm2o': raw_m2o,
-        'propostaaosta': raw_propostaaosta
+        'propostaaosta': raw_propostaaosta,
+        'capital': raw_capital
     }
     upload_rankings(all_data_to_upload)
 except Exception as e:
@@ -822,6 +833,7 @@ json_bruno     = json.dumps(raw_bruno,     ensure_ascii=False, separators=(',', 
 json_kisskiss  = json.dumps(raw_kisskiss,  ensure_ascii=False, separators=(',', ':'))
 json_m2o       = json.dumps(raw_m2o,       ensure_ascii=False, separators=(',', ':'))
 json_propostaaosta = json.dumps(raw_propostaaosta, ensure_ascii=False, separators=(',', ':'))
+json_capital   = json.dumps(raw_capital,   ensure_ascii=False, separators=(',', ':'))
 
 print(f"  JSON Subasio:   {len(json_subasio)//1024} KB")
 print(f"  JSON Divina:    {len(json_divina)//1024} KB")
@@ -836,6 +848,7 @@ print(f"  JSON Bruno:     {len(json_bruno)//1024} KB")
 print(f"  JSON Kiss Kiss: {len(json_kisskiss)//1024} KB")
 print(f"  JSON m2o:       {len(json_m2o)//1024} KB")
 print(f"  JSON Proposta:  {len(json_propostaaosta)//1024} KB")
+print(f"  JSON Capital:   {len(json_capital)//1024} KB")
 
 # ── Genera HTML ───────────────────────────────────────────────────────────────
 print("Generazione HTML...")
@@ -2032,6 +2045,7 @@ body.user-is-viewer .radio-date-badge {{
     <button class="radio-tab" onclick="switchRadio('kisskiss')">Radio Kiss Kiss</button>
     <button class="radio-tab" onclick="switchRadio('m2o')">Radio m2o</button>
     <button class="radio-tab" onclick="switchRadio('propostaaosta')">Proposta Aosta</button>
+    <button class="radio-tab" onclick="switchRadio('capital')">Radio Capital</button>
   </div>
 </header>
 
@@ -2108,6 +2122,11 @@ body.user-is-viewer .radio-date-badge {{
           <input type="checkbox" checked onchange="toggleGlobalRadio('propostaaosta')" data-radio="propostaaosta">
           <span class="global-cb-check"></span>
           <span class="global-cb-label">Proposta</span>
+        </label>
+        <label class="global-cb-wrap checked" id="cb-capital">
+          <input type="checkbox" checked onchange="toggleGlobalRadio('capital')" data-radio="capital">
+          <span class="global-cb-check"></span>
+          <span class="global-cb-label">Capital</span>
         </label>
       </div>
     </div>
@@ -2333,7 +2352,8 @@ const RAW = {{
   bruno:{json_bruno},
   kisskiss:{json_kisskiss},
   m2o:{json_m2o},
-  propostaaosta:{json_propostaaosta}
+  propostaaosta:{json_propostaaosta},
+  capital:{json_capital}
 }};
 
 let currentRadio = 'globale';
@@ -2343,13 +2363,13 @@ let selectedDates = null;  // null = tutte le date; Set = date selezionate
 let currentSort = [{{col:'plays', dir:'desc'}}];
 let activeDecade = 'all';
 
-const RADIO_KEYS = ['subasio','divina','mitology','nostalgia','toscana','italia','rds','rtl1025','birikina','bruno','kisskiss','m2o','propostaaosta'];
+const RADIO_KEYS = ['subasio','divina','mitology','nostalgia','toscana','italia','rds','rtl1025','birikina','bruno','kisskiss','m2o','propostaaosta','capital'];
 const RADIO_LABELS = {{
   subasio: 'Radio Subasio', divina: 'Radio Divina', mitology: 'Radio Mitology',
   nostalgia: 'Nostalgia Toscana', toscana: 'Radio Toscana', italia: 'Radio Italia',
   rds: 'RDS', rtl1025: 'RTL 102.5',
   birikina: 'Radio Birikina', bruno: 'Radio Bruno', kisskiss: 'Radio Kiss Kiss',
-  m2o: 'Radio m2o', propostaaosta: 'Proposta Aosta'
+  m2o: 'Radio m2o', propostaaosta: 'Proposta Aosta', capital: 'Radio Capital'
 }};
 let globalSelectedRadios = new Set(RADIO_KEYS);
 let isGlobale = true;
