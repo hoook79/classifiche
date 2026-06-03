@@ -863,52 +863,159 @@ html = f"""<!DOCTYPE html>
 <title>Radio Charts – Classifica Airplay</title>
 <style>
 :root{{
-  --red:#C8102E; --red-dark:#9e0c24; --gold:#FFD700; --silver:#C0C0C0; --bronze:#CD7F32;
-  --bg:#f4f5f7; --surface:#fff; --border:#e0e0e0;
-  --text:#1a1a2e; --text-muted:#666; --text-light:#999;
-  --up:#00a550; --down:#C8102E; --new:#0057b8; --stable:#888;
+  --red:#C8102E; --red-dark:#9e0c24; --gold:#facc15; --silver:#C0C0C0; --bronze:#CD7F32;
+  --bg:#f8fafc; --surface:#fff; --border:#e2e8f0;
+  --text:#0f172a; --text-muted:#475569; --text-light:#94a3b8;
+  --up:#22c55e; --down:#ef4444; --new:#3b82f6; --stable:#64748b;
   --top10:#fff3cd; --top3-bg:#fff;
 }}
 *{{box-sizing:border-box;margin:0;padding:0}}
 body{{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}}
 
 /* HEADER */
-header{{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);color:#fff;padding:0;box-shadow:0 4px 20px rgba(0,0,0,.4)}}
+header{{background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);color:#fff;padding:0;box-shadow:0 4px 20px rgba(0,0,0,.25)}}
 .header-top{{display:flex;align-items:center;justify-content:space-between;padding:18px 32px 12px}}
 .logo{{display:flex;align-items:center;gap:12px}}
-.logo-icon{{width:44px;height:44px;background:var(--red);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;letter-spacing:-1px;color:#fff}}
+.logo-icon{{width:44px;height:44px;background:var(--red);border:2px solid var(--gold);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;color:#fff}}
 .logo-text h1{{font-size:22px;font-weight:800;letter-spacing:.5px}}
 .logo-text span{{font-size:11px;opacity:.6;text-transform:uppercase;letter-spacing:2px}}
-.header-meta{{text-align:right;font-size:12px;opacity:.6}}
-.header-meta strong{{display:block;font-size:14px;opacity:1;color:var(--gold)}}
+.header-meta{{text-align:right;font-size:12px;opacity:.8}}
+.header-meta strong{{display:block;font-size:14px;opacity:1;color:var(--gold);margin-top:2px}}
 
 /* RADIO TABS */
-.radio-tabs{{display:flex;padding:0 32px;border-top:1px solid rgba(255,255,255,.1);overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}}
+.radio-tabs{{display:flex;padding:0 32px;border-top:1px solid rgba(255,255,255,.08);overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}}
 .radio-tabs::-webkit-scrollbar{{height:6px;display:block}}
-.radio-tabs::-webkit-scrollbar-track{{background:rgba(255,255,255,0.05)}}
-.radio-tabs::-webkit-scrollbar-thumb{{background:rgba(255,255,255,0.2);border-radius:3px}}
-.radio-tabs::-webkit-scrollbar-thumb:hover{{background:rgba(255,255,255,0.4)}}
-.radio-tab{{padding:14px 28px;font-size:14px;font-weight:600;cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,.5);border-bottom:3px solid transparent;transition:all .2s;letter-spacing:.5px;text-transform:uppercase;flex-shrink:0}}
-.radio-tab:hover{{color:rgba(255,255,255,.85)}}
-.radio-tab.active{{color:#fff;border-bottom-color:var(--red)}}
+.radio-tabs::-webkit-scrollbar-track{{background:rgba(255,255,255,0.02)}}
+.radio-tabs::-webkit-scrollbar-thumb{{background:rgba(255,255,255,0.15);border-radius:3px}}
+.radio-tab{{padding:14px 28px;font-size:14px;font-weight:600;cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,.55);border-bottom:3px solid transparent;transition:all .2s;letter-spacing:.5px;text-transform:uppercase;flex-shrink:0}}
+.radio-tab:hover{{color:rgba(255,255,255,.9)}}
+.radio-tab.active{{color:#fff;border-bottom-color:#facc15}}
 
 /* FILTERS */
-.filters-bar{{background:#fff;border-bottom:2px solid var(--border);padding:14px 32px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:0 2px 8px rgba(0,0,0,.06)}}
-.filter-row{{display:contents}} /* Gli elementi fluiscono liberamente in orizzontale su desktop */
-.search-box{{position:relative;flex:1;min-width:200px;max-width:340px}}
-.search-box input{{width:100%;padding:9px 36px 9px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;outline:none;transition:border-color .2s;background:#fafafa}}
-.search-box input:focus{{border-color:var(--red);background:#fff}}
-.search-box .icon{{position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:15px;pointer-events:none}}
-.decade-chips{{display:flex;gap:6px}}
-.chip{{padding:6px 13px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:#fafafa;color:var(--text-muted);transition:all .2s}}
-.chip:hover{{border-color:var(--red);color:var(--red)}}
-.chip.active{{background:var(--red);color:#fff;border-color:var(--red)}}
-.filter-select-group, .filter-input-group{{display:inline-flex;align-items:center;gap:8px}}
-.filter-input{{width:75px;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:#fafafa;outline:none;color:var(--text);transition:border-color .2s}}
-.filter-input:focus{{border-color:var(--red);background:#fff}}
-.results-count-wrap{{margin-left:auto;display:flex;align-items:center}}
-.results-count{{font-size:13px;color:var(--text-muted);white-space:nowrap}}
-.filter-label{{font-size:12px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}}
+.filters-bar {{
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 4px 20px rgba(15,23,42,.04), 0 1px 3px rgba(15,23,42,.02);
+  border: 1px solid rgba(15,23,42,.06);
+  margin: 20px 32px 0;
+}}
+.filter-row {{
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}}
+.row-1 {{
+  justify-content: space-between;
+}}
+.search-box{{position:relative;flex:1;min-width:200px;max-width:380px}}
+.search-box input{{width:100%;padding:10px 40px 10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;outline:none;transition:all .2s;background:#f8fafc}}
+.search-box input:focus{{border-color:#3b82f6;background:#fff;box-shadow:0 0 0 3px rgba(59,130,246,.1)}}
+.search-box .icon{{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:16px;pointer-events:none}}
+
+.filter-grid {{
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 24px;
+  align-items: flex-start;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f1f5f9;
+}}
+.filter-section {{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}}
+.select-wrapper {{
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}}
+.select-icon {{
+  position: absolute;
+  left: 12px;
+  font-size: 14px;
+  pointer-events: none;
+  z-index: 10;
+}}
+.styled-select {{
+  padding: 10px 36px 10px 34px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  outline: none;
+  background-color: #fff;
+  color: #334155;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px;
+  transition: all 0.2s ease;
+  width: 100%;
+}}
+.styled-select:focus {{
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}}
+.styled-select.text-red {{
+  color: var(--red);
+  border-color: rgba(200, 16, 46, 0.3);
+  background-color: rgba(200, 16, 46, 0.01);
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23C8102E' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+}}
+.styled-select.text-red:focus {{
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(200, 16, 46, 0.1);
+}}
+
+.row-3 {{
+  justify-content: flex-start;
+  gap: 32px;
+  flex-wrap: wrap;
+}}
+.adv-group {{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}}
+.compact-select {{
+  padding: 8px 32px 8px 12px;
+  background-position: right 8px center;
+  font-size: 13px;
+  border-radius: 8px;
+  width: auto;
+  min-width: 90px;
+}}
+.compact-input {{
+  padding: 8px 12px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  outline: none;
+  background-color: #fff;
+  color: #334155;
+  transition: all 0.2s ease;
+  width: 90px;
+}}
+.compact-input:focus {{
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}}
+
+.decade-chips{{display:flex;gap:6px;flex-wrap:wrap}}
+.chip{{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e2e8f0;background:#f8fafc;color:#475569;transition:all .2s;white-space:nowrap}}
+.chip:hover{{border-color:var(--red);color:var(--red);background:rgba(200,16,46,0.02)}}
+.chip.active{{background:var(--red);color:#fff;border-color:var(--red);box-shadow:0 4px 12px rgba(200, 16, 46, 0.2)}}
+.filter-label{{font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.8px;white-space:nowrap}}
 
 /* TOGGLE SWITCH STYLE */
 .toggle-wrap {{
@@ -917,12 +1024,6 @@ header{{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);c
   gap: 8px;
   cursor: pointer;
   user-select: none;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-right: 14px;
 }}
 .toggle-switch {{
   position: relative;
@@ -954,133 +1055,48 @@ header{{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);c
   transform: translateX(16px);
 }}
 
-/* DECADE CHIPS */
-.decade-chips{{display:flex;gap:6px;flex-wrap:wrap}}
-.chip{{padding:6px 13px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:#fafafa;color:var(--text-muted);transition:all .2s;white-space:nowrap}}
-.chip:hover{{border-color:var(--red);color:var(--red)}}
-.chip.active{{background:var(--red);color:#fff;border-color:var(--red)}}
+.info-tooltip {{
+  cursor: help;
+  color: var(--text-light);
+  display: inline-block;
+  margin-left: 2px;
+}}
 
-/* DATE FILTER */
-.date-filter-wrap{{position:relative}}
-.date-filter-btn{{
-  padding:6px 13px;border-radius:20px;font-size:12px;font-weight:600;
-  cursor:pointer;border:1.5px solid var(--border);background:#fafafa;
-  color:var(--text-muted);transition:all .2s;white-space:nowrap;
-}}
-.date-filter-btn.active{{background:var(--red);color:#fff;border-color:var(--red)}}
-.date-panel{{
-  display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:200;
-  background:#fff;border:1.5px solid var(--border);border-radius:12px;
-  box-shadow:0 8px 32px rgba(0,0,0,.15);padding:14px;min-width:260px;
-}}
-.date-panel.open{{display:block}}
-/* HOUR FILTER */
-.hour-filter-wrap{{position:relative}}
-.hour-filter-btn{{
-  padding:6px 13px;border-radius:20px;font-size:12px;font-weight:600;
-  cursor:pointer;border:1.5px solid var(--border);background:#fafafa;
-  color:var(--text-muted);transition:all .2s;white-space:nowrap;
-}}
-.hour-filter-btn.active{{background:var(--red);color:#fff;border-color:var(--red)}}
-.hour-panel{{
-  display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:200;
-  background:#fff;border:1.5px solid var(--border);border-radius:12px;
-  box-shadow:0 8px 32px rgba(0,0,0,.15);padding:14px;min-width:320px;
-}}
-.hour-panel.open{{display:block}}
-.hour-grid{{
-  display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:10px;
-}}
-.hour-cb-wrap{{
-  display:flex;align-items:center;justify-content:center;
-  gap:4px;padding:6px 4px;border-radius:6px;font-size:12px;font-weight:600;
-  border:1px solid var(--border);background:#fafafa;color:var(--text-muted);
-  cursor:pointer;user-select:none;transition:all .15s;
-}}
-.hour-cb-wrap input[type="checkbox"]{{
-  accent-color:var(--red);cursor:pointer;margin:0;
-}}
-.hour-cb-wrap:hover{{
-  border-color:var(--red);color:var(--red);background:rgba(200,16,46,0.04);
-}}
-.hour-cb-wrap.active{{
-  background:rgba(200,16,46,0.08);border-color:var(--red);color:var(--text);
-}}
-/* Preset rapidi */
-.cal-shortcuts{{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)}}
-.cal-shortcut-btn{{
-  padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;
-  border:1.5px solid var(--border);border-radius:20px;background:#f5f5f5;
-  color:var(--text-muted);transition:all .15s;white-space:nowrap;
-}}
-.cal-shortcut-btn:hover,.cal-shortcut-btn.active{{background:var(--red);color:#fff;border-color:var(--red)}}
-/* Navigazione mese */
-.cal-nav{{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}}
-.cal-nav-btn{{
-  width:26px;height:26px;border:1.5px solid var(--border);border-radius:6px;
-  background:#f5f5f5;cursor:pointer;font-size:14px;font-weight:700;
-  display:flex;align-items:center;justify-content:center;color:var(--text);transition:all .15s;
-}}
-.cal-nav-btn:hover{{background:var(--red);color:#fff;border-color:var(--red)}}
-.cal-month-label{{font-size:13px;font-weight:700;color:var(--text)}}
-/* Griglia calendario */
-.cal-grid{{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}}
-.cal-head{{text-align:center;font-size:10px;font-weight:700;color:var(--text-muted);
-  padding:3px 0;text-transform:uppercase;letter-spacing:.3px}}
-.cal-cell{{
-  text-align:center;font-size:12px;font-weight:500;padding:5px 2px;
-  border-radius:6px;color:var(--text-muted);min-width:0;
-}}
-.cal-cell.has-data{{
-  cursor:pointer;color:var(--text);font-weight:600;
-  background:#f0f4ff;
-}}
-.cal-cell.has-data:hover{{background:#dde4ff}}
-.cal-cell.has-data.selected{{background:var(--red);color:#fff}}
-.cal-cell.empty{{visibility:hidden}}
-.cal-cell.no-data{{color:#ccc;cursor:default}}
-
-/* STATS STRIP */
-.stats-strip{{display:flex;gap:0;background:var(--surface);border-bottom:1px solid var(--border)}}
-.stat-chip{{flex:1;padding:12px 20px;text-align:center;border-right:1px solid var(--border)}}
-.stat-chip:last-child{{border-right:none}}
-.stat-chip .val{{font-size:20px;font-weight:800;color:var(--red)}}
-.stat-chip .lbl{{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-top:2px}}
+/* RESULTS COUNT */
+.results-count-wrap{{margin-left:auto;display:flex;align-items:center}}
+.results-count{{font-size:13px;font-weight:600;color:var(--text-muted);white-space:nowrap}}
 
 /* MAIN TABLE */
 .table-wrap{{padding:24px 32px;overflow-x:auto}}
 table{{width:100%;border-collapse:collapse;font-size:14px}}
-thead tr{{background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff}}
-thead th{{padding:12px 16px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;cursor:pointer;user-select:none;transition:background .15s}}
-thead th:hover{{background:rgba(255,255,255,.08)}}
+thead tr{{background:#0f172a;color:#fff}}
+thead th{{padding:14px 16px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;cursor:pointer;user-select:none;transition:background .15s}}
+thead th:hover{{background:rgba(255,255,255,.05)}}
 thead th.sorted-asc::after{{content:' ▲';color:var(--gold)}}
 thead th.sorted-desc::after{{content:' ▼';color:var(--gold)}}
 thead th.sorted-asc.sorted-multi::after{{content:' ▲' attr(data-sort-index);font-size:10px;color:#bbb;margin-left:2px}}
 thead th.sorted-desc.sorted-multi::after{{content:' ▼' attr(data-sort-index);font-size:10px;color:#bbb;margin-left:2px}}
-thead th:first-child,thead th:nth-child(2){{cursor:default}}
-tbody tr{{border-bottom:1px solid var(--border);transition:background .15s;background:var(--surface)}}
-tbody tr:hover{{background:#f0f4ff}}
-tbody tr.top1{{background:linear-gradient(90deg,#fffbea,#fff)}}
-tbody tr.top2{{background:linear-gradient(90deg,#f8f8f8,#fff)}}
-tbody tr.top3{{background:linear-gradient(90deg,#fff5ee,#fff)}}
-td{{padding:10px 16px;vertical-align:middle}}
+thead th:first-child{{cursor:default}}
+tbody tr{{border-bottom:1px solid var(--border);transition:background .15s;background:#fff}}
+tbody tr:hover{{background:#f8fafc}}
+td{{padding:12px 16px;vertical-align:middle}}
 
 /* POSITION */
-.pos-cell{{text-align:center;width:52px}}
-.pos-badge{{width:36px;height:36px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;margin:0 auto}}
-.pos-1{{background:linear-gradient(135deg,#FFD700,#FFA500);color:#7a4600;box-shadow:0 2px 8px rgba(255,165,0,.4)}}
-.pos-2{{background:linear-gradient(135deg,#D0D0D0,#A0A0A0);color:#444;box-shadow:0 2px 6px rgba(0,0,0,.2)}}
-.pos-3{{background:linear-gradient(135deg,#CD8B4A,#A0522D);color:#fff;box-shadow:0 2px 6px rgba(139,69,19,.3)}}
-.pos-top10{{background:#1a1a2e;color:#fff;font-size:12px}}
-.pos-rest{{background:#f0f0f0;color:var(--text-muted);font-size:12px}}
+.pos-cell{{text-align:center;width:60px;padding-right:0 !important}}
+.pos-badge{{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;margin:0 auto}}
+.pos-1{{background:#ffd54f;color:#7f5f00;box-shadow:0 2px 6px rgba(255,213,79,.3)}}
+.pos-2{{background:#cbd5e1;color:#475569}}
+.pos-3{{background:#ffb74d;color:#7c2d12}}
+.pos-top10{{background:#f1f5f9;color:#475569}}
+.pos-rest{{background:#f8fafc;color:var(--text-light)}}
 
 /* TREND */
-.trend-cell{{width:38px;text-align:center}}
-.trend{{font-size:11px;font-weight:700;padding:3px 5px;border-radius:4px;display:inline-block}}
-.trend-up{{color:var(--up);background:#e8f5e9}}
-.trend-down{{color:var(--down);background:#ffebee}}
-.trend-new{{color:var(--new);background:#e3f2fd;font-size:10px;letter-spacing:.5px}}
-.trend-stable{{color:var(--stable);background:#f5f5f5}}
+.trend-cell{{width:45px;text-align:center;padding-left:0 !important}}
+.trend{{font-size:11px;font-weight:700;padding:3px 6px;border-radius:6px;display:inline-block;white-space:nowrap}}
+.trend-up{{color:var(--up);background:#dcfce7}}
+.trend-down{{color:var(--down);background:#fee2e2}}
+.trend-new{{color:var(--new);background:#dbeafe;font-size:10px;letter-spacing:.5px}}
+.trend-stable{{color:var(--stable);background:#f1f5f9}}
 
 /* SONG INFO */
 .song-artist{{font-weight:700;font-size:14px;color:var(--text)}}
@@ -2137,100 +2153,94 @@ body.user-is-viewer .radio-date-badge {{
   </div>
 </div>
 
-<div class="stats-strip">
-  <div class="stat-chip"><div class="val" id="stat-songs">—</div><div class="lbl">Brani</div></div>
-  <div class="stat-chip"><div class="val" id="stat-plays">—</div><div class="lbl">Passaggi Totali</div></div>
-  <div class="stat-chip"><div class="val" id="stat-days">—</div><div class="lbl">Giorni Monitorati</div></div>
-  <div class="stat-chip"><div class="val" id="stat-top" style="font-size:13px">—</div><div class="lbl">Artista #1</div></div>
-</div>
-
 <div class="filters-bar">
   <!-- Riga 1: Cerca + Esporta -->
-  <div class="filter-row main-filter-row">
+  <div class="filter-row row-1">
     <div class="search-box">
       <input type="text" id="search-input" placeholder="Cerca artista o titolo…" oninput="applyFilters()">
       <span class="icon">🔍</span>
     </div>
-    <button class="export-btn" id="export-btn" onclick="exportToCSV()" title="Esporta classifica filtrata in CSV">📥 Esporta CSV</button>
+    <button class="export-btn" id="export-btn" onclick="exportToCSV()" title="Esporta classifica filtrata in CSV" style="display: inline-flex; align-items: center; gap: 6px; background: #0d9488; color: #fff; border: none; border-radius: 8px; padding: 10px 16px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);">
+      <svg class="export-icon" viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor;"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+      Esporta CSV
+    </button>
   </div>
 
-  <!-- Riga 2: Decennio Chips -->
-  <div class="filter-row chips-filter-row">
-    <span class="filter-label">Decennio:</span>
-    <div class="decade-chips" id="decade-chips"></div>
-  </div>
-
-  <!-- Riga 3: Dropdowns (Data e Orario affiancati) -->
-  <div class="filter-row dropdowns-filter-row">
-    <div class="filter-select-group">
-      <span class="filter-label">Data:</span>
-      <div class="date-filter-wrap">
-        <button class="date-filter-btn" id="date-filter-btn" onclick="toggleDatePanel()">
-          Tutte <span id="date-filter-badge" style="display:none"></span> ▾
-        </button>
-        <div class="date-panel" id="date-panel">
-          <div class="cal-shortcuts">
-            <button class="cal-shortcut-btn" id="preset-all"       onclick="selectPreset('all')">Tutte</button>
-            <button class="cal-shortcut-btn" id="preset-7"         onclick="selectPreset(7)">Ultimi 7 gg</button>
-            <button class="cal-shortcut-btn" id="preset-30"        onclick="selectPreset(30)">Ultimo mese</button>
-            <button class="cal-shortcut-btn" id="preset-prevmonth" onclick="selectPreset('prev-month')">Mese scorso</button>
-          </div>
-          <div class="cal-nav">
-            <button class="cal-nav-btn" onclick="calShiftMonth(-1)">&#8249;</button>
-            <span class="cal-month-label" id="cal-month-label"></span>
-            <button class="cal-nav-btn" onclick="calShiftMonth(1)">&#8250;</button>
-          </div>
-          <div class="cal-grid" id="cal-grid">
-            <div class="cal-head">Lu</div><div class="cal-head">Ma</div>
-            <div class="cal-head">Me</div><div class="cal-head">Gi</div>
-            <div class="cal-head">Ve</div><div class="cal-head">Sa</div>
-            <div class="cal-head">Do</div>
-          </div>
-        </div>
+  <div class="filter-grid">
+    <!-- Decennio Section -->
+    <div class="filter-section decennio-section">
+      <span class="filter-label">DECENNIO</span>
+      <div class="decade-chips" id="decade-chips"></div>
+    </div>
+    
+    <!-- Data Section -->
+    <div class="filter-section data-section">
+      <span class="filter-label">DATA</span>
+      <div class="select-wrapper">
+        <span class="select-icon" style="color: var(--red);">📅</span>
+        <select id="date-select" class="styled-select text-red" onchange="onDateSelectChange(this.value)">
+          <option value="30">30 giorni</option>
+          <option value="7">7 giorni</option>
+          <option value="90">90 giorni</option>
+          <option value="all">Tutto</option>
+        </select>
       </div>
     </div>
 
-    <div class="filter-select-group">
-      <span class="filter-label">Orario:</span>
-      <div class="hour-filter-wrap">
-        <button class="hour-filter-btn" id="hour-filter-btn" onclick="toggleHourPanel()">
-          Tutto <span id="hour-filter-badge" style="display:none"></span> ▾
-        </button>
-        <div class="hour-panel" id="hour-panel">
-          <div class="cal-shortcuts">
-            <button class="cal-shortcut-btn" id="hour-preset-all"   onclick="selectHourPreset('all')">Tutto</button>
-            <button class="cal-shortcut-btn" id="hour-preset-none"  onclick="selectHourPreset('none')">Nessuno</button>
-            <button class="cal-shortcut-btn" id="hour-preset-day"   onclick="selectHourPreset('day')">Diurno (07-21)</button>
-            <button class="cal-shortcut-btn" id="hour-preset-night" onclick="selectHourPreset('night')">Notturno (21-07)</button>
-          </div>
-          <div class="hour-grid" id="hour-grid"></div>
-        </div>
+    <!-- Orario Section -->
+    <div class="filter-section orario-section">
+      <span class="filter-label">ORARIO</span>
+      <div class="select-wrapper">
+        <span class="select-icon">🕒</span>
+        <select id="hour-select" class="styled-select" onchange="selectHourPreset(this.value)">
+          <option value="all">Tutto</option>
+          <option value="mattina">Mattina</option>
+          <option value="pomeriggio">Pomeriggio</option>
+          <option value="sera">Sera</option>
+          <option value="notte">Notte</option>
+        </select>
       </div>
     </div>
   </div>
 
-  <!-- Riga 4: Controlli e picchi (Mostra, Min Passaggi, Posiz. Originale affiancati) -->
-  <div class="filter-row controls-filter-row">
-    <label class="toggle-wrap" title="Mantieni la posizione originale del brano in classifica anche quando filtri per nome">
-      <input type="checkbox" id="keep-rank-checkbox" onchange="applyFilters()">
-      <span class="toggle-switch"></span>
-      <span>Posiz. Orig.</span>
-    </label>
-    
-    <div class="filter-input-group" style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
-      <div style="display: flex; align-items: center; gap: 6px;">
-        <span class="filter-label" style="white-space: nowrap;">mostra prime</span>
-        <input type="number" class="filter-input" id="top-input" min="1" placeholder="50" oninput="applyFilters()" style="width: 60px; text-align: center;">
-        <span class="filter-label" style="white-space: nowrap;">posizioni</span>
+  <!-- Riga 3: Controlli Avanzati -->
+  <div class="filter-row row-3">
+    <div class="adv-group toggle-group">
+      <span class="filter-label">POSIZIONE ORIGINALE <span class="info-tooltip" title="Mantieni la posizione originale del brano in classifica anche quando filtri per nome">ⓘ</span></span>
+      <label class="toggle-wrap">
+        <input type="checkbox" id="keep-rank-checkbox" onchange="applyFilters()">
+        <span class="toggle-switch"></span>
+      </label>
+    </div>
+
+    <div class="adv-group top-group">
+      <span class="filter-label">MOSTRA PRIME <span class="info-tooltip" title="Limita il numero di posizioni mostrate">🔗</span></span>
+      <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+        <select id="top-select" class="styled-select compact-select" onchange="applyFilters()">
+          <option value="50">50</option>
+          <option value="100">100</option>
+          <option value="250">250</option>
+          <option value="all">Tutte</option>
+        </select>
+        <button class="cal-shortcut-btn" id="btn-show-all-positions" onclick="showAllPositions()" style="padding: 2px 10px; font-size: 11px; margin-top: 2px; align-self: center;">Tutte</button>
       </div>
-      <button class="cal-shortcut-btn" id="btn-show-all-positions" onclick="showAllPositions()" style="padding: 2px 10px; font-size: 11px; margin-top: 2px; align-self: center;">Tutte</button>
     </div>
-    
-    <div class="filter-input-group">
-      <span class="filter-label">Min Passaggi:</span>
-      <input type="number" class="filter-input" id="min-plays-input" min="1" placeholder="1" oninput="applyFilters()">
+
+    <div class="adv-group positions-group">
+      <span class="filter-label">POSIZIONI</span>
+      <select id="positions-select" class="styled-select compact-select" onchange="applyFilters()">
+        <option value="all">Tutte</option>
+        <option value="up">In salita</option>
+        <option value="down">In discesa</option>
+        <option value="new">Nuove</option>
+      </select>
     </div>
-    
+
+    <div class="adv-group min-plays-group">
+      <span class="filter-label">MIN PASSAGGI</span>
+      <input type="number" class="filter-input compact-input" id="min-plays-input" min="1" placeholder="1" oninput="applyFilters()">
+    </div>
+
     <div class="results-count-wrap">
       <span class="results-count" id="results-count"></span>
     </div>
@@ -2241,13 +2251,10 @@ body.user-is-viewer .radio-date-badge {{
   <table>
     <thead>
       <tr>
-        <th onclick="sortBy('plays', event)" style="width:52px;cursor:pointer" title="Ordina per posizione / passaggi">#</th>
-        <th style="width:38px;cursor:default"></th>
+        <th onclick="sortBy('plays', event)" style="width:110px;cursor:pointer" title="Ordina per posizione / passaggi">#</th>
         <th onclick="sortBy('artist', event)" title="Maiusc+Clic per ordinamenti multipli">Artista / Titolo</th>
         <th onclick="sortBy('radioDate', event)" style="text-align:center;width:120px" title="Maiusc+Clic per ordinamenti multipli">Radio Date</th>
-        <th class="sorted-desc" onclick="sortBy('plays', event)" style="text-align:center" title="Maiusc+Clic per ordinamenti multipli">Passaggi</th>
-        <th class="meta-cell" onclick="sortBy('peak', event)" style="text-align:center" title="Maiusc+Clic per ordinamenti multipli">Picco</th>
-        <th class="meta-cell" onclick="sortBy('days', event)" style="text-align:center" title="Maiusc+Clic per ordinamenti multipli">Giorni</th>
+        <th class="sorted-desc" onclick="sortBy('plays', event)" style="text-align:right;width:130px" title="Maiusc+Clic per ordinamenti multipli">Passaggi</th>
       </tr>
     </thead>
     <tbody id="chart-body"></tbody>
@@ -2672,14 +2679,16 @@ function loadData() {{
   }}
 
   const totalPlays = allSongs.reduce((a,s) => a+s.total, 0);
-  document.getElementById('stat-songs').textContent = allSongs.length;
-  document.getElementById('stat-plays').textContent = totalPlays.toLocaleString('it-IT');
-  document.getElementById('stat-days').textContent = allDates.length;
-  document.getElementById('stat-top').textContent = allSongs[0]?.artist || '—';
+  const elSongs = document.getElementById('stat-songs');
+  if (elSongs) elSongs.textContent = allSongs.length;
+  const elPlays = document.getElementById('stat-plays');
+  if (elPlays) elPlays.textContent = totalPlays.toLocaleString('it-IT');
+  const elDays = document.getElementById('stat-days');
+  if (elDays) elDays.textContent = allDates.length;
+  const elTop = document.getElementById('stat-top');
+  if (elTop) elTop.textContent = allSongs[0]?.artist || '—';
 
   buildDecadeChips();
-  buildDatePanel();
-  buildHourPanel();
   applyFilters();
 }}
 
@@ -2924,28 +2933,26 @@ function updateHourBadge() {{
 function selectHourPreset(preset) {{
   if (preset === 'all') {{
     selectedHours = null;
-  }} else if (preset === 'none') {{
-    selectedHours = new Set();
-  }} else if (preset === 'day') {{
-    selectedHours = new Set();
-    for (let h = 7; h <= 20; h++) selectedHours.add(h);
-  }} else if (preset === 'night') {{
-    selectedHours = new Set();
-    for (let h = 21; h < 24; h++) selectedHours.add(h);
-    for (let h = 0; h <= 6; h++) selectedHours.add(h);
+  }} else if (preset === 'mattina') {{
+    selectedHours = new Set([6, 7, 8, 9, 10, 11]);
+  }} else if (preset === 'pomeriggio') {{
+    selectedHours = new Set([12, 13, 14, 15, 16, 17]);
+  }} else if (preset === 'sera') {{
+    selectedHours = new Set([18, 19, 20, 21, 22, 23]);
+  }} else if (preset === 'notte') {{
+    selectedHours = new Set([0, 1, 2, 3, 4, 5]);
   }}
-  updateHourUI();
   applyFilters();
 }}
 
 function toggleDatePanel() {{
-  document.getElementById('date-panel').classList.toggle('open');
+  const panel = document.getElementById('date-panel');
+  if (panel) panel.classList.toggle('open');
 }}
 
 function buildDatePanel() {{
   allDatesSet = new Set(allDates);
   const now = new Date(); now.setHours(0,0,0,0);
-  // Mostra il mese più recente tra le date disponibili
   if (allDates.length) {{
     const latest = allDates.reduce((a,b) => ddmmToDate(a) > ddmmToDate(b) ? a : b);
     const ld = ddmmToDate(latest);
@@ -2958,9 +2965,12 @@ function buildDatePanel() {{
 }}
 
 function buildCalendar() {{
+  const lbl = document.getElementById('cal-month-label');
+  const grid = document.getElementById('cal-grid');
+  if (!lbl || !grid) return;
   const MONTHS = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
                   'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
-  document.getElementById('cal-month-label').textContent = MONTHS[calMonth] + ' ' + calYear;
+  lbl.textContent = MONTHS[calMonth] + ' ' + calYear;
   const grid = document.getElementById('cal-grid');
   const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
   let dow = new Date(calYear, calMonth, 1).getDay(); // 0=dom
@@ -3013,40 +3023,6 @@ function onCalDayClick(ddmm) {{
   buildCalendar();
 }}
 
-function selectPreset(type) {{
-  const now = new Date(); now.setHours(0,0,0,0);
-  if (type === 'all') {{
-    selectedDates = null;
-  }} else if (typeof type === 'number') {{
-    const cutoff = new Date(now.getTime() - (type-1)*86400000);
-    const sel = allDates.filter(d => {{ const dt = ddmmToDate(d); return dt >= cutoff && dt <= now; }});
-    selectedDates = sel.length === allDates.length ? null : new Set(sel);
-    // Naviga al mese di inizio selezione
-    if (sel.length) {{ const d = ddmmToDate(sel[sel.length-1]); calYear=d.getFullYear(); calMonth=d.getMonth(); }}
-  }} else if (type === 'prev-month') {{
-    let pm = now.getMonth() - 1, py = now.getFullYear();
-    if (pm < 0) {{ pm = 11; py--; }}
-    const sel = allDates.filter(d => {{ const dt = ddmmToDate(d); return dt.getMonth()===pm && dt.getFullYear()===py; }});
-    selectedDates = sel.length === allDates.length ? null : new Set(sel);
-    calYear = py; calMonth = pm;
-  }}
-  updateDateBadge();
-  applyFilters();
-  buildCalendar();
-}}
-
-function updateDateBadge() {{
-  const btn = document.getElementById('date-filter-btn');
-  if (!selectedDates) {{
-    btn.classList.remove('active');
-    btn.innerHTML = 'Tutte ▾';
-  }} else {{
-    const n = selectedDates.size;
-    btn.classList.toggle('active', n > 0);
-    btn.innerHTML = (n===0 ? 'Nessuna' : n + (n===1?' giorno':' giorni')) + ' ▾';
-  }}
-}}
-
 function updatePresetButtons() {{
   // Evidenzia il preset attivo (se coincide)
   const now = new Date(); now.setHours(0,0,0,0);
@@ -3071,6 +3047,28 @@ function updatePresetButtons() {{
   }});
 }}
 
+function onDateSelectChange(val) {{
+  if (val === 'all') {{
+    selectPreset('all');
+  }} else {{
+    selectPreset(parseInt(val));
+  }}
+}}
+
+function isSongNew(s) {{
+  if (!s.radioDate || s.radioDate === 'N/A' || s.radioDate === 'N/D') return false;
+  const parts = s.radioDate.split('/');
+  if (parts.length === 3) {{
+    const d = parseInt(parts[0]), m = parseInt(parts[1]), y = parseInt(parts[2]);
+    const dateVal = new Date(y, m - 1, d);
+    const limitDate = new Date(2026, 2, 1); // Cutoff 1 Marzo 2026
+    return dateVal >= limitDate;
+  }}
+  return false;
+}}
+
+let visibleCount = 50;
+
 // Chiudi panel cliccando fuori
 document.addEventListener('click', e => {{
   const wrap = document.getElementById('date-filter-btn')?.closest('.date-filter-wrap');
@@ -3094,16 +3092,20 @@ function showAllPositions() {{
 function applyFilters() {{
   const q = document.getElementById('search-input').value.toLowerCase().trim();
   
-  const topVal = document.getElementById('top-input').value.trim();
-  const topN = (topVal && parseInt(topVal) > 0) ? parseInt(topVal) : 99999;
+  const topSelect = document.getElementById('top-select');
+  const topVal = topSelect ? topSelect.value : '50';
+  const currentLimit = topVal === 'all' ? Infinity : parseInt(topVal);
   
   const btnAll = document.getElementById('btn-show-all-positions');
   if (btnAll) {{
-    btnAll.classList.toggle('active', !topVal);
+    btnAll.classList.toggle('active', topVal === 'all');
   }}
   
   const minPlaysVal = document.getElementById('min-plays-input').value.trim();
   const minPlays = (minPlaysVal && parseInt(minPlaysVal) > 0) ? parseInt(minPlaysVal) : 1;
+
+  const posFilterSelect = document.getElementById('positions-select');
+  const posFilter = posFilterSelect ? posFilterSelect.value : 'all';
 
   // Calcola totale per le date e orari selezionati
   const getTotal = s => {{
@@ -3143,7 +3145,7 @@ function applyFilters() {{
     s._periodRank = idx + 1;
   }});
 
-  // 4. Filtra i brani per ricerca e decennio
+  // 4. Filtra i brani per ricerca, decennio, e posizioni
   let filtered = periodRanked.filter(s => {{
     if((selectedDates || selectedHours) && s._filtTotal === 0) return false;
     if(s._filtTotal < minPlays) return false;
@@ -3152,6 +3154,16 @@ function applyFilters() {{
       const yr = parseInt(s.year);
       if(isNaN(yr) || Math.floor(yr/10)*10 !== activeDecade) return false;
     }}
+    
+    // Posizioni filter: 'up', 'down', 'new'
+    if (posFilter === 'up') {{
+      if (s.rank <= s._periodRank) return false;
+    }} else if (posFilter === 'down') {{
+      if (s.rank >= s._periodRank) return false;
+    }} else if (posFilter === 'new') {{
+      if (!isSongNew(s)) return false;
+    }}
+    
     return true;
   }});
 
@@ -3193,7 +3205,11 @@ function applyFilters() {{
   }});
 
   lastFilteredSongs = filtered;
-  const shown = filtered.slice(0, topN);
+  
+  // Reset lazy loading limit
+  visibleCount = Math.min(50, currentLimit);
+  const shown = filtered.slice(0, Math.min(visibleCount, currentLimit));
+  
   document.getElementById('results-count').textContent = `${{shown.length}} / ${{filtered.length}} brani`;
   renderTable(shown);
 }}
@@ -3259,15 +3275,16 @@ function renderTable(songs) {{
     const rowClass = pos===1?'top1':pos===2?'top2':pos===3?'top3':'';
 
     // Trend rispetto al rank originale del periodo
-    const origRank = s._periodRank;
+    const diff = s.rank - s._periodRank;
     let trendHtml;
-    if(origRank !== (i + 1)) {{
-      const diff = origRank - (i + 1);
-      trendHtml = diff > 0
-        ? `<span class="trend trend-up">▲${{diff}}</span>`
-        : `<span class="trend trend-down">▼${{Math.abs(diff)}}</span>`;
+    if (isSongNew(s) && diff >= 0) {{
+      trendHtml = `<span class="trend trend-new">NEW</span>`;
+    }} else if (diff > 0) {{
+      trendHtml = `<span class="trend trend-up">+${{diff}}</span>`;
+    }} else if (diff < 0) {{
+      trendHtml = `<span class="trend trend-down">-${{Math.abs(diff)}}</span>`;
     }} else {{
-      trendHtml = `<span class="trend trend-stable">—</span>`;
+      trendHtml = `<span class="trend trend-stable">=</span>`;
     }}
 
     const isNa = s.year === 'N/A';
@@ -3280,10 +3297,16 @@ function renderTable(songs) {{
     const rdClass = isRdNa ? 'radio-date-badge na' : 'radio-date-badge';
     const radioDateBadge = `<span class="${{rdClass}}" title="Modifica radio date" onclick="openEditYearModal(event, ${{i}})">⏱ ${{displayRd}}<svg viewBox="0 0 24 24" style="width:10px;height:10px;margin-left:4px;fill:currentColor;vertical-align:middle"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></span>`;
 
+    const playsVal = s._filtTotal !== undefined ? s._filtTotal : s.total;
+
     return `<tr class="${{rowClass}}">
-      <td class="pos-cell"><div class="pos-badge ${{posClass}}">${{pos}}</div></td>
-      <td class="trend-cell">${{trendHtml}}</td>
-      <td>
+      <td class="pos-cell" style="padding-right: 0 !important;">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
+          <div class="pos-badge ${{posClass}}">${{pos}}</div>
+          <div style="width: 36px; display: flex; justify-content: center; text-align: center;">${{trendHtml}}</div>
+        </div>
+      </td>
+      <td style="position: relative; padding-right: 52px !important;">
         <div class="song-artist" style="display:flex;align-items:center;gap:6px">
           <span>${{esc(s.artist)}}${{yearBadge}}</span>
           <button class="play-btn" title="Ascolta anteprima" onclick="event.stopPropagation();playPreview(renderedSongs[${{i}}].artist,renderedSongs[${{i}}].title,this,renderedSongs[${{i}}].previewUrl)">▶</button>
@@ -3292,16 +3315,8 @@ function renderTable(songs) {{
       </td>
       <td class="radio-date-cell">${{radioDateBadge}}</td>
       <td class="plays-cell" onclick="showPopup(${{i}})" title="Clicca per vedere orari di messa in onda">
-        <div class="plays-num">${{s._filtTotal ?? s.total}}</div>
+        <div class="plays-num">${{playsVal}}</div>
         <div class="plays-lbl">${{selectedDates ? 'nei giorni sel.' : 'pass.'}}</div>
-      </td>
-      <td class="meta-cell" style="text-align:center">
-        <div class="meta-val">#${{s.peak}}</div>
-        <div class="meta-lbl">picco</div>
-      </td>
-      <td class="meta-cell" style="text-align:center">
-        <div class="meta-val">${{s.daysCount}}</div>
-        <div class="meta-lbl">giorni</div>
       </td>
     </tr>`;
   }}).join('');
@@ -3728,7 +3743,7 @@ async function fetchChartsData() {{
 
   const tbody = document.getElementById('chart-body');
   if (tbody) {{
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:50px;font-weight:600;color:var(--text-muted)">Caricamento dati in corso... ⏳</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:50px;font-weight:600;color:var(--text-muted)">Caricamento dati in corso... ⏳</td></tr>';
   }}
 
   try {{
@@ -3750,7 +3765,7 @@ async function fetchChartsData() {{
       updateUserHeaderBadge();
       updateEditPermissions();
       if (isInitialLoad) {{
-        document.getElementById('top-input').value = '50';
+        document.getElementById('top-select').value = '50';
         switchRadio(currentRadio);
         selectPreset(30);
         isInitialLoad = false;
@@ -3769,7 +3784,7 @@ async function fetchChartsData() {{
     updateEditPermissions();
     applyAllowedRadiosVisibility();
     if (isInitialLoad) {{
-      document.getElementById('top-input').value = '50';
+      document.getElementById('top-select').value = '50';
       switchRadio(currentRadio);
       selectPreset(30);
       isInitialLoad = false;
@@ -3849,7 +3864,7 @@ function initApp() {{
     updateEditPermissions();
     applyAllowedRadiosVisibility();
     if (isInitialLoad) {{
-      document.getElementById('top-input').value = '50';
+      document.getElementById('top-select').value = '50';
       switchRadio(currentRadio);
       selectPreset(30);
       isInitialLoad = false;
