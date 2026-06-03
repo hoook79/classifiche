@@ -3143,7 +3143,7 @@ td:nth-child(2) {{
     border-radius: 9px !important;
   }}
 
-  .play-btn {{
+  #chart-body .play-btn {{
     width: 38px !important;
     height: 38px !important;
     font-size: 15px !important;
@@ -4896,14 +4896,14 @@ function showPopup(i) {{
           const eKey = (s.artist+'|'+e.title).toLowerCase();
           const ePrev = allSongs.find(x=>x.artist===s.artist&&x.title===e.title);
           const ePrevVal = ePrev && 'previewUrl' in ePrev ? String(ePrev.previewUrl) : '';
-          return '<div style="display:flex;align-items:center;gap:8px">'
-          + '<button class="play-btn" style="width:20px;height:20px;font-size:9px;flex-shrink:0" '
+          return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.03);">'
+          + '<button class="play-btn" style="width:24px !important;height:24px !important;font-size:10px !important;flex-shrink:0;margin:0 !important;padding:0 !important;display:flex;align-items:center;justify-content:center;" '
           + 'data-artist="' + esc(s.artist) + '" data-title="' + esc(e.title) + '" '
           + (ePrevVal ? 'data-preview="' + esc(ePrevVal) + '" ' : '')
           + 'onclick="event.stopPropagation();playPreviewBtn(this)" title="Ascolta anteprima">▶</button>'
-          + (e.time !== 'In diretta' ? '<span class="time-chip">' + esc(e.time) + '</span>' : '')
-          + '<span style="font-size:13px;color:var(--text);'+(e.title===s.title?'font-weight:700;color:var(--red)':'')+'">'
-          + esc(e.title) + (e.year!=='N/A' ? ' <span style="font-size:10px;color:var(--text-muted);">('+e.year+')</span>' : '')
+          + (e.time !== 'In diretta' ? '<span class="time-chip" style="margin:0 !important;flex-shrink:0;">' + esc(e.time) + '</span>' : '')
+          + '<span style="font-size:13px;color:var(--text);text-align:left;line-height:1.3;'+(e.title===s.title?'font-weight:700;color:var(--red)':'')+'">'
+          + esc(e.title) + (e.year!=='N/A' ? ' <span style="font-size:10px;color:var(--text-muted);font-weight:normal;">('+e.year+')</span>' : '')
           + '</span></div>';
         }}).join('')}}
       </div>
