@@ -2638,7 +2638,7 @@ function switchRadio(radio) {{
     buildGlobalData();
     selectedDates = null;
     activeDecade = 'all';
-    document.getElementById('date-panel').classList.remove('open');
+    document.getElementById('date-panel')?.classList.remove('open');
     loadData();
     return;
   }}
@@ -2662,7 +2662,7 @@ function switchRadio(radio) {{
     }}
   }}
   
-  document.getElementById('date-panel').classList.remove('open');
+  document.getElementById('date-panel')?.classList.remove('open');
   loadData();
 }}
 
@@ -2830,7 +2830,7 @@ function ddmmToDate(ddmm) {{
 let selectedHours = null; // null = all hours active
 
 function toggleHourPanel() {{
-  document.getElementById('hour-panel').classList.toggle('open');
+  document.getElementById('hour-panel')?.classList.toggle('open');
 }}
 
 function buildHourPanel() {{
@@ -3090,11 +3090,11 @@ let visibleCount = 50;
 document.addEventListener('click', e => {{
   const wrap = document.getElementById('date-filter-btn')?.closest('.date-filter-wrap');
   if(wrap && !wrap.contains(e.target)) {{
-    document.getElementById('date-panel').classList.remove('open');
+    document.getElementById('date-panel')?.classList.remove('open');
   }}
   const wrapHour = document.getElementById('hour-filter-btn')?.closest('.hour-filter-wrap');
   if(wrapHour && !wrapHour.contains(e.target)) {{
-    document.getElementById('hour-panel').classList.remove('open');
+    document.getElementById('hour-panel')?.classList.remove('open');
   }}
 }});
 
