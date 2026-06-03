@@ -2759,6 +2759,17 @@ td:nth-child(2) {{
   line-height: 1 !important;
   font-weight: 950 !important;
   letter-spacing: -.4px !important;
+  border-bottom: 2px dashed rgba(220, 38, 38, 0.3) !important; /* Dotted red underline to indicate interactivity */
+  padding-bottom: 2px !important;
+  cursor: pointer !important;
+  display: inline-block !important;
+  transition: all 0.2s ease !important;
+}}
+
+.plays-cell:hover .plays-num {{
+  color: #0d9488 !important; /* turns teal on hover */
+  border-bottom-color: rgba(13, 148, 136, 0.6) !important;
+  transform: translateY(-2px) scale(1.05);
 }}
 
 .plays-lbl {{
@@ -4810,7 +4821,7 @@ function renderTable(songs) {{
       <td class="radio-date-cell">${{radioDateBadge}}</td>
       <td class="plays-cell" onclick="showPopup(${{i}})" title="Clicca per vedere orari di messa in onda">
         <div class="plays-num">${{playsVal}}</div>
-        <div class="plays-lbl">${{selectedDates ? 'nei giorni sel.' : 'pass.'}}</div>
+        <div class="plays-lbl">${{selectedDates ? 'sel.' : 'pass.'}} ⏱</div>
       </td>
     </tr>`;
   }}).join('');
