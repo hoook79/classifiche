@@ -2158,6 +2158,12 @@ header {{
   overflow-x: auto !important;
   white-space: nowrap !important;
   scrollbar-width: none;
+  cursor: grab;
+  user-select: none;
+}}
+
+.radio-tabs.active-drag {{
+  cursor: grabbing;
 }}
 
 .radio-tabs::-webkit-scrollbar {{
@@ -5358,7 +5364,7 @@ function initApp() {{
     }}
   }}
 
-  // Abilita lo scorrimento orizzontale con la rotellina del mouse sulle schede delle radio
+  // Abilita lo scorrimento orizzontale con la rotellina del mouse e con il trascinamento del mouse
   const tabs = document.querySelector('.radio-tabs');
   if (tabs) {{
     tabs.addEventListener('wheel', (e) => {{
@@ -5367,6 +5373,48 @@ function initApp() {{
         tabs.scrollLeft += e.deltaY;
       }}
     }}, {{ passive: false }});
+
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+    let hasDragged = false;
+
+    tabs.addEventListener('mousedown', (e) => {{
+      isDown = true;
+      hasDragged = false;
+      tabs.classList.add('active-drag');
+      startX = e.pageX - tabs.offsetLeft;
+      scrollLeft = tabs.scrollLeft;
+    }});
+
+    tabs.addEventListener('mousemove', (e) => {{
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - tabs.offsetLeft;
+      const walk = (x - startX) * 1.5; // velocità di trascinamento
+      if (Math.abs(walk) > 5) {{
+        hasDragged = true;
+      }}
+      tabs.scrollLeft = scrollLeft - walk;
+    }});
+
+    tabs.addEventListener('mouseup', () => {{
+      isDown = false;
+      tabs.classList.remove('active-drag');
+    }});
+
+    tabs.addEventListener('mouseleave', () => {{
+      isDown = false;
+      tabs.classList.remove('active-drag');
+    }});
+
+    // Blocca il click sui pulsanti radio se c'è stato un trascinamento
+    tabs.addEventListener('click', (e) => {{
+      if (hasDragged) {{
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+    }}, true); // Fase di cattura
   }}
 }}
 
