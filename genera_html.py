@@ -2480,7 +2480,7 @@ header {{
 /* Controlli avanzati: diventano mini-card ordinate */
 .row-3 {{
   display: grid !important;
-  grid-template-columns: 1.15fr 1fr 1fr 1fr auto !important;
+  grid-template-columns: 1.15fr 1.35fr 1fr auto !important;
   gap: 14px !important;
   align-items: stretch !important;
   flex-wrap: initial !important;
@@ -2777,7 +2777,7 @@ td:nth-child(2) {{
   }}
 
   .row-3 {{
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }}
 
   .results-count-wrap {{
@@ -3274,6 +3274,8 @@ td:nth-child(2) {{
   }}
 }}
 
+  .date-panel.open {{ display: block !important; }}
+  .hour-panel.open {{ display: block !important; }}
 </style>
 </head>
 <body>
@@ -3443,29 +3445,63 @@ td:nth-child(2) {{
     <!-- Data Section -->
     <div class="filter-section data-section">
       <span class="filter-label">DATA</span>
-      <div class="select-wrapper">
-        <span class="select-icon" style="color: var(--red);">📅</span>
-        <select id="date-select" class="styled-select text-red" onchange="onDateSelectChange(this.value)">
-          <option value="30">30 giorni</option>
-          <option value="7">7 giorni</option>
-          <option value="90">90 giorni</option>
-          <option value="all">Tutto</option>
-        </select>
+      <div class="date-filter-wrap" style="position: relative; width: 100%;">
+        <div class="select-wrapper">
+          <span class="select-icon" style="color: var(--red);">📅</span>
+          <select id="date-select" class="styled-select text-red" onchange="onDateSelectChange(this.value)">
+            <option value="30">30 giorni</option>
+            <option value="7">7 giorni</option>
+            <option value="90">90 giorni</option>
+            <option value="all">Tutto</option>
+            <option value="custom">Scegli dal calendario...</option>
+          </select>
+        </div>
+        <div class="date-panel" id="date-panel" style="display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:200; background:#fff; border:1.5px solid var(--rc-border); border-radius:12px; box-shadow:var(--rc-shadow); padding:14px; min-width:260px;">
+          <div class="cal-shortcuts" style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 10px;">
+            <button class="cal-shortcut-btn" id="preset-all"       onclick="selectPreset('all')" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; border: 1px solid var(--rc-border-strong); background: #f8fafc; font-weight: 700; cursor: pointer;">Tutte</button>
+            <button class="cal-shortcut-btn" id="preset-7"         onclick="selectPreset(7)" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; border: 1px solid var(--rc-border-strong); background: #f8fafc; font-weight: 700; cursor: pointer;">7 gg</button>
+            <button class="cal-shortcut-btn" id="preset-30"        onclick="selectPreset(30)" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; border: 1px solid var(--rc-border-strong); background: #f8fafc; font-weight: 700; cursor: pointer;">Mese</button>
+          </div>
+          <div class="cal-nav" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <button class="cal-nav-btn" onclick="calShiftMonth(-1)" style="background: none; border: none; font-size: 18px; cursor: pointer; font-weight: bold;">&#8249;</button>
+            <span class="cal-month-label" id="cal-month-label" style="font-weight: 800; font-size: 14px;"></span>
+            <button class="cal-nav-btn" onclick="calShiftMonth(1)" style="background: none; border: none; font-size: 18px; cursor: pointer; font-weight: bold;">&#8250;</button>
+          </div>
+          <div class="cal-grid" id="cal-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; font-size: 12px;">
+            <div class="cal-head" style="font-weight: 800; color: var(--rc-muted);">Lu</div>
+            <div class="cal-head" style="font-weight: 800; color: var(--rc-muted);">Ma</div>
+            <div class="cal-head" style="font-weight: 800; color: var(--rc-muted);">Me</div>
+            <div class="cal-head" style="font-weight: 800; color: var(--rc-muted);">Gi</div>
+            <div class="cal-head" style="font-weight: 800; color: var(--rc-muted);">Ve</div>
+            <div class="cal-head" style="font-weight: 800; color: var(--rc-muted);">Sa</div>
+            <div class="cal-head" style="font-weight: 800; color: var(--rc-muted);">Do</div>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- Orario Section -->
     <div class="filter-section orario-section">
       <span class="filter-label">ORARIO</span>
-      <div class="select-wrapper">
-        <span class="select-icon">🕒</span>
-        <select id="hour-select" class="styled-select" onchange="selectHourPreset(this.value)">
-          <option value="all">Tutto</option>
-          <option value="mattina">Mattina</option>
-          <option value="pomeriggio">Pomeriggio</option>
-          <option value="sera">Sera</option>
-          <option value="notte">Notte</option>
-        </select>
+      <div class="hour-filter-wrap" style="position: relative; width: 100%;">
+        <div class="select-wrapper">
+          <span class="select-icon">🕒</span>
+          <select id="hour-select" class="styled-select" onchange="onHourSelectChange(this.value)">
+            <option value="all">Tutto</option>
+            <option value="mattina">Mattina</option>
+            <option value="pomeriggio">Pomeriggio</option>
+            <option value="sera">Sera</option>
+            <option value="notte">Notte</option>
+            <option value="custom">Scegli ore...</option>
+          </select>
+        </div>
+        <div class="hour-panel" id="hour-panel" style="display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:200; background:#fff; border:1.5px solid var(--rc-border); border-radius:12px; box-shadow:var(--rc-shadow); padding:14px; min-width:320px;">
+          <div class="cal-shortcuts" style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 10px;">
+            <button class="cal-shortcut-btn" id="hour-preset-all"   onclick="selectHourPreset('all')" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; border: 1px solid var(--rc-border-strong); background: #f8fafc; font-weight: 700; cursor: pointer;">Tutto</button>
+            <button class="cal-shortcut-btn" id="hour-preset-none"  onclick="selectHourPreset('none')" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; border: 1px solid var(--rc-border-strong); background: #f8fafc; font-weight: 700; cursor: pointer;">Nessuno</button>
+          </div>
+          <div class="hour-grid" id="hour-grid" style="display:grid; grid-template-columns:repeat(6,1fr); gap:6px; margin-top:10px;"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -3480,27 +3516,10 @@ td:nth-child(2) {{
       </label>
     </div>
 
-    <div class="adv-group top-group">
-      <span class="filter-label">MOSTRA PRIME <span class="info-tooltip" title="Limita il numero di posizioni mostrate">🔗</span></span>
-      <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
-        <select id="top-select" class="styled-select compact-select" onchange="applyFilters()">
-          <option value="50">50</option>
-          <option value="100">100</option>
-          <option value="250">250</option>
-          <option value="all">Tutte</option>
-        </select>
-        <button class="cal-shortcut-btn" id="btn-show-all-positions" onclick="showAllPositions()" style="padding: 2px 10px; font-size: 11px; margin-top: 2px; align-self: center;">Tutte</button>
-      </div>
-    </div>
-
-    <div class="adv-group positions-group">
-      <span class="filter-label">POSIZIONI</span>
-      <select id="positions-select" class="styled-select compact-select" onchange="applyFilters()">
-        <option value="all">Tutte</option>
-        <option value="up">In salita</option>
-        <option value="down">In discesa</option>
-        <option value="new">Nuove</option>
-      </select>
+    <div class="adv-group top-group" style="flex-direction: row !important; align-items: center !important; gap: 8px !important; justify-content: center !important;">
+      <span style="font-size: 13px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: .09em; white-space: nowrap;">PRIME</span>
+      <input type="number" id="top-input" min="1" value="50" class="compact-input" style="width: 80px !important; text-align: center !important; height: 38px !important; padding: 0 !important; font-weight: 800 !important;" oninput="applyFilters()">
+      <span style="font-size: 13px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: .09em; white-space: nowrap;">POSIZIONI</span>
     </div>
 
     <div class="adv-group min-plays-group">
@@ -3645,7 +3664,18 @@ const RADIO_LABELS = {{
   birikina: 'Radio Birikina', bruno: 'Radio Bruno', kisskiss: 'Radio Kiss Kiss',
   m2o: 'Radio m2o', propostaaosta: 'Proposta Aosta', capital: 'Radio Capital'
 }};
-let globalSelectedRadios = new Set(RADIO_KEYS);
+let globalSelectedRadios = (() => {{
+  const saved = localStorage.getItem('radio_charts_global_selected');
+  if (saved) {{
+    try {{
+      const arr = JSON.parse(saved);
+      if (Array.isArray(arr) && arr.length > 0) {{
+        return new Set(arr.filter(k => RADIO_KEYS.includes(k)));
+      }}
+    }} catch(e) {{}}
+  }}
+  return new Set(RADIO_KEYS);
+}})();
 let isGlobale = true;
 let userAllowedRadios = 'all';
 let isInitialLoad = true;
@@ -3959,6 +3989,26 @@ function loadData() {{
   applyFilters();
 }}
 
+function saveGlobalRadiosState() {{
+  localStorage.setItem('radio_charts_global_selected', JSON.stringify(Array.from(globalSelectedRadios)));
+}}
+
+function applyGlobalCheckboxesState() {{
+  RADIO_KEYS.forEach(k => {{
+    const wrap = document.getElementById('cb-' + k);
+    if (wrap) {{
+      const checkbox = wrap.querySelector('input[type="checkbox"]');
+      const isChecked = globalSelectedRadios.has(k);
+      if (checkbox) checkbox.checked = isChecked;
+      if (isChecked) {{
+        wrap.classList.add('checked');
+      }} else {{
+        wrap.classList.remove('checked');
+      }}
+    }}
+  }});
+}}
+
 function toggleGlobalRadio(radioKey) {{
   const wrap = document.getElementById(`cb-${{radioKey}}`);
   const checkbox = wrap.querySelector('input[type="checkbox"]');
@@ -3970,6 +4020,7 @@ function toggleGlobalRadio(radioKey) {{
     globalSelectedRadios.delete(radioKey);
     wrap.classList.remove('checked');
   }}
+  saveGlobalRadiosState();
   
   buildGlobalData();
   updateGlobalSelectorSummary();
@@ -3995,6 +4046,7 @@ function selectAllGlobal() {{
       wrap.querySelector('input[type="checkbox"]').checked = true;
     }}
   }});
+  saveGlobalRadiosState();
   buildGlobalData();
   updateGlobalSelectorSummary();
   loadData();
@@ -4009,6 +4061,7 @@ function selectNoneGlobal() {{
       wrap.querySelector('input[type="checkbox"]').checked = false;
     }}
   }});
+  saveGlobalRadiosState();
   buildGlobalData();
   updateGlobalSelectorSummary();
   loadData();
@@ -4153,6 +4206,10 @@ function toggleHour(h) {{
       selectedHours = null;
     }}
   }}
+  const hourSelect = document.getElementById('hour-select');
+  if (hourSelect) {{
+    hourSelect.value = selectedHours ? 'custom' : 'all';
+  }}
   updateHourUI();
   applyFilters();
 }}
@@ -4200,6 +4257,8 @@ function updateHourBadge() {{
 function selectHourPreset(preset) {{
   if (preset === 'all') {{
     selectedHours = null;
+  }} else if (preset === 'none') {{
+    selectedHours = new Set();
   }} else if (preset === 'mattina') {{
     selectedHours = new Set([6, 7, 8, 9, 10, 11]);
   }} else if (preset === 'pomeriggio') {{
@@ -4208,6 +4267,10 @@ function selectHourPreset(preset) {{
     selectedHours = new Set([18, 19, 20, 21, 22, 23]);
   }} else if (preset === 'notte') {{
     selectedHours = new Set([0, 1, 2, 3, 4, 5]);
+  }}
+  const select = document.getElementById('hour-select');
+  if (select) {{
+    select.value = preset;
   }}
   applyFilters();
 }}
@@ -4284,6 +4347,10 @@ function onCalDayClick(ddmm) {{
     const dataKeys = [...allDatesSet];
     if (dataKeys.every(k => selectedDates.has(k))) selectedDates = null;
   }}
+  const dateSelect = document.getElementById('date-select');
+  if (dateSelect) {{
+    dateSelect.value = selectedDates ? 'custom' : 'all';
+  }}
   updateDateBadge();
   applyFilters();
   buildCalendar();
@@ -4314,10 +4381,26 @@ function updatePresetButtons() {{
 }}
 
 function onDateSelectChange(val) {{
-  if (val === 'all') {{
-    selectPreset('all');
+  if (val === 'custom') {{
+    buildDatePanel();
+    document.getElementById('date-panel')?.classList.add('open');
   }} else {{
-    selectPreset(parseInt(val));
+    document.getElementById('date-panel')?.classList.remove('open');
+    if (val === 'all') {{
+      selectPreset('all');
+    }} else {{
+      selectPreset(parseInt(val));
+    }}
+  }}
+}}
+
+function onHourSelectChange(val) {{
+  if (val === 'custom') {{
+    buildHourPanel();
+    document.getElementById('hour-panel')?.classList.add('open');
+  }} else {{
+    document.getElementById('hour-panel')?.classList.remove('open');
+    selectHourPreset(val);
   }}
 }}
 
@@ -4355,20 +4438,20 @@ let visibleCount = 50;
 
 // Chiudi panel cliccando fuori
 document.addEventListener('click', e => {{
-  const wrap = document.getElementById('date-filter-btn')?.closest('.date-filter-wrap');
-  if(wrap && !wrap.contains(e.target)) {{
+  const wrap = e.target.closest('.date-filter-wrap');
+  if (!wrap) {{
     document.getElementById('date-panel')?.classList.remove('open');
   }}
-  const wrapHour = document.getElementById('hour-filter-btn')?.closest('.hour-filter-wrap');
-  if(wrapHour && !wrapHour.contains(e.target)) {{
+  const wrapHour = e.target.closest('.hour-filter-wrap');
+  if (!wrapHour) {{
     document.getElementById('hour-panel')?.classList.remove('open');
   }}
 }});
 
 function showAllPositions() {{
-  const select = document.getElementById('top-select');
-  if (select) {{
-    select.value = 'all';
+  const input = document.getElementById('top-input');
+  if (input) {{
+    input.value = '';
     applyFilters();
   }}
 }}
@@ -4376,20 +4459,17 @@ function showAllPositions() {{
 function applyFilters() {{
   const q = document.getElementById('search-input').value.toLowerCase().trim();
   
-  const topSelect = document.getElementById('top-select');
-  const topVal = topSelect ? topSelect.value : '50';
-  const currentLimit = topVal === 'all' ? Infinity : parseInt(topVal);
+  const topInput = document.getElementById('top-input');
+  const topVal = topInput ? topInput.value.trim() : '50';
+  const currentLimit = (topVal && parseInt(topVal) > 0) ? parseInt(topVal) : Infinity;
   
   const btnAll = document.getElementById('btn-show-all-positions');
   if (btnAll) {{
-    btnAll.classList.toggle('active', topVal === 'all');
+    btnAll.classList.toggle('active', !topVal);
   }}
   
   const minPlaysVal = document.getElementById('min-plays-input').value.trim();
   const minPlays = (minPlaysVal && parseInt(minPlaysVal) > 0) ? parseInt(minPlaysVal) : 1;
-
-  const posFilterSelect = document.getElementById('positions-select');
-  const posFilter = posFilterSelect ? posFilterSelect.value : 'all';
 
   // Calcola totale per le date e orari selezionati
   const getTotal = s => {{
@@ -4439,14 +4519,7 @@ function applyFilters() {{
       if(isNaN(yr) || Math.floor(yr/10)*10 !== activeDecade) return false;
     }}
     
-    // Posizioni filter: 'up', 'down', 'new'
-    if (posFilter === 'up') {{
-      if (s.rank <= s._periodRank) return false;
-    }} else if (posFilter === 'down') {{
-      if (s.rank >= s._periodRank) return false;
-    }} else if (posFilter === 'new') {{
-      if (!isSongNew(s)) return false;
-    }}
+
     
     return true;
   }});
@@ -5049,7 +5122,7 @@ async function fetchChartsData() {{
       updateUserHeaderBadge();
       updateEditPermissions();
       if (isInitialLoad) {{
-        document.getElementById('top-select').value = '50';
+        document.getElementById('top-input').value = '50';
         switchRadio(currentRadio);
         selectPreset(30);
         isInitialLoad = false;
@@ -5067,8 +5140,9 @@ async function fetchChartsData() {{
     userRole = 'user';
     updateEditPermissions();
     applyAllowedRadiosVisibility();
+    applyGlobalCheckboxesState();
     if (isInitialLoad) {{
-      document.getElementById('top-select').value = '50';
+      document.getElementById('top-input').value = '50';
       switchRadio(currentRadio);
       selectPreset(30);
       isInitialLoad = false;
@@ -5135,6 +5209,7 @@ function initApp() {{
       }}
     }}
     applyAllowedRadiosVisibility();
+    applyGlobalCheckboxesState();
     if (user && pass) {{
       document.getElementById('login-overlay').style.display = 'none';
       fetchChartsData();
@@ -5147,8 +5222,9 @@ function initApp() {{
     userAllowedRadios = 'all';
     updateEditPermissions();
     applyAllowedRadiosVisibility();
+    applyGlobalCheckboxesState();
     if (isInitialLoad) {{
-      document.getElementById('top-select').value = '50';
+      document.getElementById('top-input').value = '50';
       switchRadio(currentRadio);
       selectPreset(30);
       isInitialLoad = false;
