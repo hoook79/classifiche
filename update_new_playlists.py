@@ -211,6 +211,32 @@ def scrape_day_myradioonline(url_base, label, offset=0):
         print(f"  Errore scraping {label} (MyRadioOnline) offset {offset}: {e}")
         return []
 
+def save_json_atomic(filepath, data, indent=2, ensure_ascii=False):
+    tmp_file = f"{filepath}.tmp"
+    with open(tmp_file, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=indent, ensure_ascii=ensure_ascii)
+    os.replace(tmp_file, filepath)
+
+def load_json_safe(filepath):
+    if not os.path.exists(filepath):
+        return []
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"  [ATTENZIONE] Impossibile leggere {filepath}: {e}")
+        try:
+            with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
+                content = f.read()
+            last_brace = content.rfind('}')
+            if last_brace > 0:
+                recovered = json.loads(content[:last_brace+1] + '\n]')
+                print(f"  [RECUPERO] Recuperati {len(recovered)} elementi da {filepath}")
+                return recovered
+        except Exception:
+            pass
+        return []
+
 def update_radio(key, config, cache):
     json_db = config['json_db']
     excel_out = config['excel_out']
@@ -221,11 +247,7 @@ def update_radio(key, config, cache):
     print(f"\n--- Aggiornamento passaggi {label} ({source}) ---")
     
     # 1. Carica storico esistente
-    if os.path.exists(json_db):
-        with open(json_db, 'r', encoding='utf-8') as f:
-            history = json.load(f)
-    else:
-        history = []
+    history = load_json_safe(json_db)
         
     seen = {f"{item['song']}|{item['date']}|{item['time']}" for item in history}
     initial_count = len(history)
@@ -261,8 +283,7 @@ def update_radio(key, config, cache):
     added_count = len(history) - initial_count
     print(f"  Aggiunti {added_count} nuovi passaggi per {label}.")
 
-    with open(json_db, 'w', encoding='utf-8') as f:
-        json.dump(history, f, indent=2, ensure_ascii=False)
+    save_json_atomic(json_db, history)
 
     # 3. Elaborazione Excel storico
     song_stats = defaultdict(lambda: {"year": "N/A", "total": 0, "days": defaultdict(list)})

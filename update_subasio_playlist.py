@@ -62,11 +62,35 @@ def scrape_day(offset=0):
         print(f"Errore scraping: {e}")
         return []
 
+def save_json_atomic(filepath, data, indent=2, ensure_ascii=False):
+    tmp_file = f"{filepath}.tmp"
+    with open(tmp_file, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=indent, ensure_ascii=ensure_ascii)
+    os.replace(tmp_file, filepath)
+
+def load_json_safe(filepath):
+    if not os.path.exists(filepath):
+        return []
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"  [ATTENZIONE] Impossibile leggere {filepath}: {e}")
+        try:
+            with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
+                content = f.read()
+            last_brace = content.rfind('}')
+            if last_brace > 0:
+                recovered = json.loads(content[:last_brace+1] + '\n]')
+                print(f"  [RECUPERO] Recuperati {len(recovered)} elementi da {filepath}")
+                return recovered
+        except Exception:
+            pass
+        return []
+
 def main():
     # 1. Carica dati
-    if os.path.exists(JSON_DB):
-        with open(JSON_DB, 'r', encoding='utf-8') as f: history = json.load(f)
-    else: history = []
+    history = load_json_safe(JSON_DB)
     
     cache = load_years_cache()
     seen = {f"{item['song']}|{item['date']}|{item['time']}" for item in history}
@@ -101,8 +125,7 @@ def main():
     added_count = len(history) - initial_count
     print(f"Aggiunti {added_count} nuovi passaggi Subasio.")
 
-    with open(JSON_DB, 'w', encoding='utf-8') as f:
-        json.dump(history, f, indent=2, ensure_ascii=False)
+    save_json_atomic(JSON_DB, history)
 
     # 3. Elaborazione Excel
     song_stats = defaultdict(lambda: {"year": "N/A", "total": 0, "days": defaultdict(list)})

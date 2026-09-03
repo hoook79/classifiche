@@ -34,6 +34,12 @@ DELAY_S         = 0.3   # secondi tra chiamate API
 _itunes_failures = 0
 _itunes_skip_until = 0  # timestamp fino a cui saltare iTunes
 
+def save_cache_atomic(path, cache):
+    tmp = f"{path}.tmp"
+    with open(tmp, 'w', encoding='utf-8') as f:
+        json.dump(cache, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, path)
+
 # ── Normalizzazione per matching ──────────────────────────────────────────────
 def norm(s):
     s = (s or '').lower()
@@ -265,13 +271,11 @@ else:
 
         # Salva ogni 20 brani per non perdere progressi
         if i % 20 == 0:
-            with open(PREVIEW_CACHE, 'w', encoding='utf-8') as f:
-                json.dump(cache, f, ensure_ascii=False, indent=2)
+            save_cache_atomic(PREVIEW_CACHE, cache)
             print(f"  -> Cache salvata ({i} processati)")
 
     # Salvataggio finale
-    with open(PREVIEW_CACHE, 'w', encoding='utf-8') as f:
-        json.dump(cache, f, ensure_ascii=False, indent=2)
+    save_cache_atomic(PREVIEW_CACHE, cache)
 
     print(f"\nRisultati: {found} con anteprima, {not_found} senza.")
 

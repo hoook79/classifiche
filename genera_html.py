@@ -442,6 +442,29 @@ def build_global_canonical_mapping(song_counts, years_cache, overrides):
                 
     return raw_to_canonical, canonical_to_spelling
 
+# Helper caricamento sicuro JSON
+def load_json_safe(filepath, default=None):
+    if default is None:
+        default = []
+    if not os.path.exists(filepath):
+        return default
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"  [ATTENZIONE] JSON corrotto o illeggibile in {os.path.basename(filepath)}: {e}")
+        try:
+            with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
+                content = f.read()
+            last_brace = content.rfind('}')
+            if last_brace > 0:
+                recovered = json.loads(content[:last_brace+1] + '\n]')
+                print(f"  [RECUPERO] Recuperati {len(recovered)} elementi da {os.path.basename(filepath)}")
+                return recovered
+        except Exception:
+            pass
+        return default
+
 # Tenta di sincronizzare gli override da Google Sheets prima di caricare i dati
 try:
     from google_sheets_sync import download_overrides
@@ -452,92 +475,36 @@ except Exception as e:
 # ── Carica dati ───────────────────────────────────────────────────────────────
 print("Caricamento dati...")
 
-with open(SUBASIO_JSON, 'r', encoding='utf-8') as f:
-    subasio_history = json.load(f)
+subasio_history = load_json_safe(SUBASIO_JSON, [])
+divina_history  = load_json_safe(DIVINA_JSON, [])
+mitology_history = load_json_safe(MITOLOGY_JSON, [])
+nostalgia_history = load_json_safe(NOSTALGIA_JSON, [])
+toscana_history = load_json_safe(TOSCANA_JSON, [])
+italia_history = load_json_safe(ITALIA_JSON, [])
+rds_history = load_json_safe(RDS_JSON, [])
+rtl1025_history = load_json_safe(RTL1025_JSON, [])
+birikina_history = load_json_safe(BIRIKINA_JSON, [])
+bruno_history = load_json_safe(BRUNO_JSON, [])
+kisskiss_history = load_json_safe(KISSKISS_JSON, [])
+m2o_history = load_json_safe(M2O_JSON, [])
+propostaaosta_history = load_json_safe(PROPOSTAAOSTA_JSON, [])
+capital_history = load_json_safe(CAPITAL_JSON, [])
 
-with open(DIVINA_JSON, 'r', encoding='utf-8') as f:
-    divina_history = json.load(f)
-
-mitology_history = []
-if os.path.exists(MITOLOGY_JSON):
-    with open(MITOLOGY_JSON, 'r', encoding='utf-8') as f:
-        mitology_history = json.load(f)
-
-nostalgia_history = []
-if os.path.exists(NOSTALGIA_JSON):
-    with open(NOSTALGIA_JSON, 'r', encoding='utf-8') as f:
-        nostalgia_history = json.load(f)
-
-toscana_history = []
-if os.path.exists(TOSCANA_JSON):
-    with open(TOSCANA_JSON, 'r', encoding='utf-8') as f:
-        toscana_history = json.load(f)
-
-italia_history = []
-if os.path.exists(ITALIA_JSON):
-    with open(ITALIA_JSON, 'r', encoding='utf-8') as f:
-        italia_history = json.load(f)
-
-rds_history = []
-if os.path.exists(RDS_JSON):
-    with open(RDS_JSON, 'r', encoding='utf-8') as f:
-        rds_history = json.load(f)
-
-rtl1025_history = []
-if os.path.exists(RTL1025_JSON):
-    with open(RTL1025_JSON, 'r', encoding='utf-8') as f:
-        rtl1025_history = json.load(f)
-
-birikina_history = []
-if os.path.exists(BIRIKINA_JSON):
-    with open(BIRIKINA_JSON, 'r', encoding='utf-8') as f:
-        birikina_history = json.load(f)
-
-bruno_history = []
-if os.path.exists(BRUNO_JSON):
-    with open(BRUNO_JSON, 'r', encoding='utf-8') as f:
-        bruno_history = json.load(f)
-
-kisskiss_history = []
-if os.path.exists(KISSKISS_JSON):
-    with open(KISSKISS_JSON, 'r', encoding='utf-8') as f:
-        kisskiss_history = json.load(f)
-
-m2o_history = []
-if os.path.exists(M2O_JSON):
-    with open(M2O_JSON, 'r', encoding='utf-8') as f:
-        m2o_history = json.load(f)
-
-propostaaosta_history = []
-if os.path.exists(PROPOSTAAOSTA_JSON):
-    with open(PROPOSTAAOSTA_JSON, 'r', encoding='utf-8') as f:
-        propostaaosta_history = json.load(f)
-
-capital_history = []
-if os.path.exists(CAPITAL_JSON):
-    with open(CAPITAL_JSON, 'r', encoding='utf-8') as f:
-        capital_history = json.load(f)
-
-years_cache = {}
-if os.path.exists(CACHE_YEARS):
-    with open(CACHE_YEARS, 'r', encoding='utf-8') as f:
-        years_cache = json.load(f)
+years_cache = load_json_safe(CACHE_YEARS, {})
 
 # Applica gli override manuali sopra la cache
 if os.path.exists(CACHE_OVERRIDES):
-    with open(CACHE_OVERRIDES, 'r', encoding='utf-8') as f:
-        try:
-            overrides = json.load(f)
-            years_cache.update(overrides)
-            print(f"  Override manuali applicati: {len(overrides)} brani aggiornati.")
-        except Exception as e:
-            print(f"  Errore nel caricamento degli override: {e}")
+    try:
+        overrides = load_json_safe(CACHE_OVERRIDES, {})
+        years_cache.update(overrides)
+        print(f"  Override manuali applicati: {len(overrides)} brani aggiornati.")
+    except Exception as e:
+        print(f"  Errore nel caricamento degli override: {e}")
 
 # Cache normalizzata per lookup robusto case/punctuation-insensitive
 normalized_years_cache = {normalize_name(k): v for k, v in years_cache.items() if v != 'N/A'}
 
-radiodates_cache = {}
-if os.path.exists(CACHE_RADIODATES):
+radiodates_cache = load_json_safe(CACHE_RADIODATES, {})
     with open(CACHE_RADIODATES, 'r', encoding='utf-8') as f:
         try:
             radiodates_cache = json.load(f)
@@ -566,12 +533,9 @@ for history in [subasio_history, divina_history, mitology_history, nostalgia_his
 raw_to_canonical, canonical_to_spelling = build_global_canonical_mapping(global_song_counts, years_cache, overrides)
 print(f"  Mappatura completata: {len(raw_to_canonical)} grafie unite in {len(canonical_to_spelling)} canzoni canoniche.")
 
-preview_cache = {}
-if os.path.exists(CACHE_PREVIEWS):
-    with open(CACHE_PREVIEWS, 'r', encoding='utf-8') as f:
-        preview_cache = json.load(f)
-    n_preview = sum(1 for v in preview_cache.values() if v)
-    print(f"  Preview cache: {len(preview_cache)} brani ({n_preview} con URL)")
+preview_cache = load_json_safe(CACHE_PREVIEWS, {})
+n_preview = sum(1 for v in preview_cache.values() if v)
+print(f"  Preview cache: {len(preview_cache)} brani ({n_preview} con URL)")
 
 # ── Processa Radio Subasio ────────────────────────────────────────────────────
 print("Elaborazione Radio Subasio...")
@@ -3982,11 +3946,7 @@ function buildGlobalData() {{
     }}
   }});
   
-  allDates = Array.from(allDatesSet).sort((a, b) => {{
-    const [da, ma, ya] = a.split('/').map(Number);
-    const [db, mb, yb] = b.split('/').map(Number);
-    return new Date(ya, ma - 1, da) - new Date(yb, mb - 1, db);
-  }});
+  allDates = Array.from(allDatesSet).sort((a, b) => ddmmToDate(a) - ddmmToDate(b));
   
   RADIO_KEYS.forEach(radioKey => {{
     if (!globalSelectedRadios.has(radioKey)) return;
@@ -5536,7 +5496,8 @@ async function searchSongDataOnline() {{
   document.getElementById('edit-year-save-btn').disabled = true;
   
   try {{
-    const res = await fetch('http://localhost:8000/api/search', {{
+    const apiBase = window.location.protocol === 'file:' ? 'http://localhost:8000' : '';
+    const res = await fetch(`${{apiBase}}/api/search`, {{
       method: 'POST',
       headers: {{ 'Content-Type': 'application/json' }},
       body: JSON.stringify({{
@@ -5658,7 +5619,8 @@ async function saveYearOverride() {{
       }});
       data = await res.json();
     }} else {{
-      res = await fetch('http://localhost:8000/api/override', {{
+      const apiBase = window.location.protocol === 'file:' ? 'http://localhost:8000' : '';
+      res = await fetch(`${{apiBase}}/api/override`, {{
         method: 'POST',
         headers: {{ 'Content-Type': 'application/json' }},
         body: JSON.stringify({{
@@ -5925,4 +5887,14 @@ with open(OUT_HTML, 'w', encoding='utf-8') as f:
 size_kb = os.path.getsize(OUT_HTML) // 1024
 print(f"\nHTML generato: {OUT_HTML}")
 print(f"Dimensione: {size_kb} KB")
+
+# Copia automatica in index.html
+INDEX_HTML = os.path.join(BASE, 'index.html')
+try:
+    import shutil
+    shutil.copy2(OUT_HTML, INDEX_HTML)
+    print(f"Sincronizzato {os.path.basename(OUT_HTML)} -> index.html ({today_str})")
+except Exception as e:
+    print(f"Errore sincronizzazione index.html: {e}")
+
 print("Fatto!")

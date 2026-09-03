@@ -46,8 +46,10 @@ def load_cache():
     return {}
 
 def save_cache(cache):
-    with open(CACHE_FILE, 'w', encoding='utf-8') as f:
+    tmp_file = f"{CACHE_FILE}.tmp"
+    with open(tmp_file, 'w', encoding='utf-8') as f:
         json.dump(cache, f, indent=2, ensure_ascii=False)
+    os.replace(tmp_file, CACHE_FILE)
 
 def normalize_for_match(s):
     """Normalizza una stringa per il confronto: maiuscolo, rimuovi punteggiatura e parole accessorie."""

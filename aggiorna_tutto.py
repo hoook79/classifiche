@@ -91,6 +91,17 @@ if __name__ == "__main__":
     # 8. Rigenera l'HTML con tutti i dati aggiornati
     run_script('genera_html.py')
 
+    # 9. Copia classifica_radio.html in index.html per la pubblicazione web
+    html_src = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'classifica_radio.html')
+    html_dst = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'index.html')
+    if os.path.exists(html_src):
+        try:
+            import shutil
+            shutil.copy2(html_src, html_dst)
+            print("\n[OK] Copiato classifica_radio.html in index.html per GitHub Pages.", flush=True)
+        except Exception as e:
+            print(f"\n[ERRORE] Impossibile copiare in index.html: {e}", flush=True)
+
     end_time = time.time()
     elapsed = round(end_time - start_time, 2)
     print(f"\nAggiornamento quotidiano completato in {elapsed} secondi.")
