@@ -102,6 +102,21 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"\n[ERRORE] Impossibile copiare in index.html: {e}", flush=True)
 
+    # 10. Invio automatico delle modifiche su GitHub Pages
+    print("\n--- Invio automatico su GitHub Pages ---", flush=True)
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        subprocess.run(['git', 'add', 'index.html', '*.py', '*.bat', '*.vbs', '*.js', '*.md'], cwd=base_dir, capture_output=True)
+        commit_msg = f"Aggiornamento automatico classifica ({datetime.datetime.now().strftime('%d/%m/%Y %H:%M')})"
+        subprocess.run(['git', 'commit', '-m', commit_msg], cwd=base_dir, capture_output=True)
+        push_res = subprocess.run(['git', 'push', 'origin', 'main'], cwd=base_dir, capture_output=True, text=True)
+        if push_res.returncode == 0:
+            print("  [OK] Sito web aggiornato automaticamente su GitHub Pages!", flush=True)
+        else:
+            print(f"  [INFO] Git push: {push_res.stdout.strip() if push_res.stdout else push_res.stderr.strip()}", flush=True)
+    except Exception as e:
+        print(f"  [ATTENZIONE] Impossibile inviare a GitHub: {e}", flush=True)
+
     end_time = time.time()
     elapsed = round(end_time - start_time, 2)
     print(f"\nAggiornamento quotidiano completato in {elapsed} secondi.")
