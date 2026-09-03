@@ -96,7 +96,7 @@ def main():
 
     print("Aggiornamento dati Radio Toscana...", flush=True)
     added_count = 0
-    for i in range(7):
+    for i in range(14):
         day_data = scrape_day(i)
         for item in day_data:
             uid = f"{item['song']}|{item['date']}|{item['time']}"

@@ -115,7 +115,7 @@ def main():
     # 2. Aggiorna passaggi
     print("Aggiornamento passaggi Radio Subasio...")
     # Recuperiamo sempre gli ultimi 7 giorni per coprire eventuali periodi di inattività
-    for i in range(7):
+    for i in range(14):
         for item in scrape_day(i):
             uid = f"{item['song']}|{item['date']}|{item['time']}"
             if uid not in seen and not is_near_duplicate(item, history):

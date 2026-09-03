@@ -268,7 +268,7 @@ def update_radio(key, config, cache):
         return False
 
     # 2. Scraping ultimi 7 giorni
-    for i in range(7):
+    for i in range(14):
         if source == 'myradioonline':
             day_data = scrape_day_myradioonline(url_base, label, i)
         else:

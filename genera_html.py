@@ -505,11 +505,6 @@ if os.path.exists(CACHE_OVERRIDES):
 normalized_years_cache = {normalize_name(k): v for k, v in years_cache.items() if v != 'N/A'}
 
 radiodates_cache = load_json_safe(CACHE_RADIODATES, {})
-    with open(CACHE_RADIODATES, 'r', encoding='utf-8') as f:
-        try:
-            radiodates_cache = json.load(f)
-        except Exception as e:
-            print(f"  Errore nel caricamento della cache delle radio date: {e}")
 
 if os.path.exists(CACHE_RADIODATES_OVERRIDES):
     with open(CACHE_RADIODATES_OVERRIDES, 'r', encoding='utf-8') as f:

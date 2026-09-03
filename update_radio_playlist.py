@@ -95,7 +95,7 @@ def main():
     print(f"Aggiornamento dati Radio Divina...")
     added_count = 0
     # Recuperiamo sempre gli ultimi 7 giorni per coprire eventuali periodi di inattività
-    for i in range(7):
+    for i in range(14):
         day_data = scrape_day(i)
         for item in day_data:
             uid = f"{item['song']}|{item['date']}|{item['time']}"
