@@ -11,7 +11,7 @@ sys.stdout.reconfigure(line_buffering=True)
 
 JSON_DB   = 'radio_nostalgia_history.json'
 EXCEL_OUT = 'classifica_radio_nostalgia_STORICO.xlsx'
-URL_BASE  = "https://onlineradiobox.com/it/nostalgiatoscana875/playlist/"
+URL_BASE  = "https://onlineradiobox.com/it/nostalgiatoscana/playlist/"
 
 def parse_song(s):
     match = re.search(r'\((\d{4})\)', s)
@@ -53,6 +53,8 @@ def scrape_day(offset=0):
                     "time": time_el.get_text(strip=True),
                     "song": song_el.get_text(strip=True)
                 })
+        if not data:
+            print(f"  Offset {offset} ({date_str}): nessun brano nella pagina (playlist non pubblicata?).", flush=True)
         return data
     except Exception as e:
         print(f"Errore scraping Nostalgia offset {offset}: {e}", flush=True)

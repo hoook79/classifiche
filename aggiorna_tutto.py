@@ -79,8 +79,15 @@ if __name__ == "__main__":
     # 5.5. Aggiornamento Radio Italia, RDS, RTL 102.5
     run_script('update_new_playlists.py')
 
+    # 5.6. Importa i nuovi passaggi nel database della dashboard
+    run_script('sync_db.py')
+
     # 6. Recupero anni mancanti
     run_script('fetch_years.py')
+
+    # 6.2. Prima generazione dell'HTML: la classifica locale è aggiornata anche se
+    # i passaggi lenti successivi (EarOne ~20 min) vengono interrotti
+    run_script('genera_html.py')
 
     # 6.5. Recupero radio date da EarOne
     run_script('scrape_earone_radiodates.py')
