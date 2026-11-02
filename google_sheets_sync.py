@@ -325,3 +325,52 @@ def sync_metadata():
         print(f"[GOOGLE SHEETS] Errore durante la sincronizzazione dei metadati: {e}")
     finally:
         conn.close()
+
+def push_metadata_rows(keys):
+    """
+    Aggiorna su Google Sheets solo le righe dei brani indicati [(artista_pulito, titolo_pulito), ...],
+    leggendo i valori dal DB locale. Le righe che non esistono ancora nel foglio vengono aggiunte in fondo.
+    """
+    if not keys:
+        return
+    client = get_sheets_client()
+    if not client:
+        return
+
+    conn = get_db_connection()
+    try:
+        sheet = client.open(SPREADSHEET_NAME).worksheet("CanzoniMetadati")
+        artists = sheet.col_values(1)
+        titles = sheet.col_values(2)
+        row_index = {}
+        for i, (art, tit) in enumerate(zip(artists, titles), start=1):
+            row_index[(art.strip().lower(), tit.strip().lower())] = i
+
+        updates = []
+        appends = []
+        for art, tit in keys:
+            r = conn.execute(
+                "SELECT artista_pulito, titolo_pulito, codice_siae, codice_iswc, codice_isrc, compositore, autore, casa_discografica, anno_pubblicazione "
+                "FROM canzoni_metadati WHERE artista_pulito = ? AND titolo_pulito = ?", (art, tit)
+            ).fetchone()
+            if not r:
+                continue
+            values = [r["artista_pulito"], r["titolo_pulito"], r["codice_siae"] or "", r["codice_iswc"] or "", r["codice_isrc"] or "",
+                      r["compositore"] or "", r["autore"] or "", r["casa_discografica"] or "", r["anno_pubblicazione"] or ""]
+            row_num = row_index.get((art.strip().lower(), tit.strip().lower()))
+            if row_num:
+                updates.append({"range": f"A{row_num}:I{row_num}", "values": [values]})
+            else:
+                appends.append(values)
+
+        if updates:
+            sheet.batch_update(updates)
+        if appends:
+            sheet.append_rows(appends)
+        print(f"[GOOGLE SHEETS] Inviati {len(updates)} brani aggiornati e {len(appends)} nuovi.")
+    except gspread.exceptions.WorksheetNotFound:
+        print("[GOOGLE SHEETS] Scheda 'CanzoniMetadati' assente: eseguire prima una sincronizzazione completa.")
+    except Exception as e:
+        print(f"[GOOGLE SHEETS] Errore invio righe modificate: {e}")
+    finally:
+        conn.close()

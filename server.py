@@ -10,6 +10,9 @@ import io
 import csv
 import xlsxwriter
 import re
+import time
+import threading
+import concurrent.futures
 
 def sanitize_for_siae(text):
     if not text:
@@ -32,7 +35,7 @@ def sanitize_for_siae(text):
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(DIRECTORY)
 
-from db_manager import get_db_connection, update_metadata, get_monthly_unique_songs, insert_passage
+from db_manager import get_db_connection, update_metadata, get_monthly_unique_songs, insert_passage, month_range, get_available_months, init_db
 from log_parser import parse_log_file
 from scraper_retro import scrape_retro
 from data_cleaner import clean_song
@@ -150,9 +153,252 @@ def find_radio_date(artist, title):
         print(f"Errore durante ricerca radio date: {e}")
     return "N/A"
 
+RADIOS = [
+    {"id": "subasio", "name": "Radio Subasio"},
+    {"id": "divina", "name": "Radio Divina"},
+    {"id": "mitology", "name": "Radio Mitology"},
+    {"id": "nostalgia", "name": "Radio Nostalgia"},
+    {"id": "toscana", "name": "Radio Toscana"},
+    {"id": "italia", "name": "Radio Italia"},
+    {"id": "rds", "name": "RDS"},
+    {"id": "rtl1025", "name": "RTL 102.5"},
+    {"id": "birikina", "name": "Radio Birikina"},
+    {"id": "bruno", "name": "Radio Bruno"},
+    {"id": "kisskiss", "name": "Radio Kiss Kiss"},
+    {"id": "m2o", "name": "Radio m2o"},
+    {"id": "propostaaosta", "name": "Proposta Aosta"},
+    {"id": "capital", "name": "Radio Capital"}
+]
+RADIO_NAMES = {r["id"]: r["name"] for r in RADIOS}
+
+METADATA_FIELDS = ["codice_siae", "codice_iswc", "codice_isrc", "compositore", "autore", "casa_discografica", "anno_pubblicazione"]
+
+def is_empty(val):
+    return not val or str(val).strip() in ['', '-', 'N/A', 'N/D']
+
+def apply_song_status(song):
+    """Calcola semaforo e campi mancanti di un brano (modifica il dict e lo ritorna)."""
+    has_siae = not is_empty(song["codice_siae"])
+    has_iswc = not is_empty(song["codice_iswc"])
+    has_isrc = not is_empty(song["codice_isrc"])
+    has_writer = not (is_empty(song["compositore"]) and is_empty(song["autore"]))
+    has_label_or_year = not (is_empty(song["casa_discografica"]) and is_empty(song["anno_pubblicazione"]))
+
+    missing = []
+    if not (has_siae or has_iswc):
+        missing.append("SIAE/ISWC")
+    if not has_isrc:
+        missing.append("ISRC")
+    if not has_writer:
+        missing.append("Autori")
+    if not has_label_or_year:
+        missing.append("Label/Anno")
+
+    if not missing:
+        song["status"] = "green"
+    elif len(missing) == 4:
+        song["status"] = "red"
+    else:
+        song["status"] = "yellow"
+    song["mancanti"] = missing
+    return song
+
+# Cache in memoria dei brani per (mese, radio): la query mensile si esegue una volta sola,
+# poi filtri, ricerca e paginazione lavorano in memoria. Scade dopo CACHE_TTL secondi
+# perché i poller inseriscono nuovi passaggi da processi separati.
+CACHE_TTL = 300
+_songs_cache = {}
+_songs_cache_lock = threading.Lock()
+
+def get_songs_cached(month, radio_id, refresh=False):
+    key = (month, radio_id or "all")
+    now = time.time()
+    with _songs_cache_lock:
+        entry = _songs_cache.get(key)
+        if entry and not refresh and now - entry[0] < CACHE_TTL:
+            return entry[1]
+
+    songs = []
+    for row in get_monthly_unique_songs(month, radio_id):
+        song = {"artista_pulito": row["artista_pulito"], "titolo_pulito": row["titolo_pulito"], "passaggi": row["passaggi"]}
+        for field in METADATA_FIELDS:
+            song[field] = row[field] or ""
+        songs.append(apply_song_status(song))
+
+    with _songs_cache_lock:
+        if len(_songs_cache) > 30:
+            _songs_cache.clear()
+        _songs_cache[key] = (now, songs)
+    return songs
+
+def invalidate_songs_cache():
+    with _songs_cache_lock:
+        _songs_cache.clear()
+
+def update_cached_song(artist_clean, title_clean, values):
+    """Aggiorna il brano in tutte le liste in cache, senza rieseguire le query."""
+    with _songs_cache_lock:
+        for _, songs in _songs_cache.values():
+            for song in songs:
+                if song["artista_pulito"] == artist_clean and song["titolo_pulito"] == title_clean:
+                    song.update(values)
+                    apply_song_status(song)
+
+STATUS_ORDER = {"red": 0, "yellow": 1, "green": 2}
+
+def filter_songs(songs, q, status, sort):
+    result = songs
+    if status in ("green", "yellow", "red"):
+        result = [s for s in result if s["status"] == status]
+    elif status == "incomplete":
+        result = [s for s in result if s["status"] != "green"]
+    if q:
+        terms = q.lower().split()
+        def matches(s):
+            text = " ".join([s["artista_pulito"], s["titolo_pulito"], s["codice_siae"], s["codice_iswc"], s["codice_isrc"], s["compositore"], s["autore"]]).lower()
+            return all(t in text for t in terms)
+        result = [s for s in result if matches(s)]
+
+    if sort == "artist":
+        result = sorted(result, key=lambda s: (s["artista_pulito"].lower(), s["titolo_pulito"].lower()))
+    elif sort == "title":
+        result = sorted(result, key=lambda s: (s["titolo_pulito"].lower(), s["artista_pulito"].lower()))
+    elif sort == "status":
+        result = sorted(result, key=lambda s: (STATUS_ORDER[s["status"]], -s["passaggi"]))
+    else:
+        result = sorted(result, key=lambda s: (-s["passaggi"], s["artista_pulito"].lower()))
+    return result
+
+# Invio a Google Sheets solo dei brani modificati, raggruppati ogni pochi secondi.
+# La sincronizzazione completa dopo ogni salvataggio era lenta e poteva riportare
+# sul DB il vecchio valore presente nel foglio.
+_sheets_queue = set()
+_sheets_lock = threading.Lock()
+_sheets_timer = None
+
+def queue_sheets_push(artist_clean, title_clean):
+    global _sheets_timer
+    with _sheets_lock:
+        _sheets_queue.add((artist_clean, title_clean))
+        if _sheets_timer is None:
+            _sheets_timer = threading.Timer(5.0, _flush_sheets_queue)
+            _sheets_timer.daemon = True
+            _sheets_timer.start()
+
+def _flush_sheets_queue():
+    global _sheets_timer
+    with _sheets_lock:
+        keys = list(_sheets_queue)
+        _sheets_queue.clear()
+        _sheets_timer = None
+    try:
+        from google_sheets_sync import push_metadata_rows
+        push_metadata_rows(keys)
+    except Exception as e:
+        print(f"Errore invio righe a Google Sheets: {e}")
+
+_spotify_token = {"value": None, "expires": 0.0}
+
+def lookup_song_online(artist, title):
+    """
+    Cerca i metadati di un singolo brano interrogando in parallelo Spotify, Deezer, iTunes e MusicBrainz.
+    Non salva nulla: ritorna i valori trovati con la fonte, da confermare nel pannello.
+    """
+    from enrichment_worker import load_config, get_spotify_token, search_spotify, search_deezer, search_itunes
+    from bulk_enrichment import rate_limited_search_musicbrainz
+
+    if time.time() > _spotify_token["expires"]:
+        config = load_config()
+        token = get_spotify_token(config.get("spotify_client_id"), config.get("spotify_client_secret"))
+        _spotify_token["value"] = token
+        _spotify_token["expires"] = time.time() + (3000 if token else 600)
+    token = _spotify_token["value"]
+
+    def safe(fn, *args, size=3):
+        try:
+            res = fn(*args)
+            return res if res else (None,) * size
+        except Exception as e:
+            print(f"[LOOKUP] Errore {fn.__name__} per '{artist} - {title}': {e}")
+            return (None,) * size
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as ex:
+        f_spotify = ex.submit(safe, search_spotify, artist, title, token) if token else None
+        f_deezer = ex.submit(safe, search_deezer, artist, title)
+        f_itunes = ex.submit(safe, search_itunes, artist, title, size=2)
+        f_mb = ex.submit(safe, rate_limited_search_musicbrainz, artist, title)
+        sp = f_spotify.result() if f_spotify else (None, None, None)
+        dz = f_deezer.result()
+        it = f_itunes.result()
+        mb = f_mb.result()
+
+    found = {}
+    def pick(field, candidates):
+        for value, source in candidates:
+            if not is_empty(value):
+                found[field] = {"value": str(value).strip(), "source": source}
+                return
+
+    pick("codice_isrc", [(sp[0], "Spotify"), (dz[0], "Deezer")])
+    pick("anno_pubblicazione", [(sp[1], "Spotify"), (dz[1], "Deezer"), (it[0], "iTunes")])
+    pick("casa_discografica", [(sp[2], "Spotify"), (dz[2], "Deezer"), (it[1], "iTunes")])
+    pick("codice_iswc", [(mb[0], "MusicBrainz")])
+    pick("compositore", [(mb[1], "MusicBrainz")])
+    pick("autore", [(mb[2], "MusicBrainz")])
+    return found
+
+def get_bordereau_rows(month, radio_id, mode):
+    conn = get_db_connection()
+    params = list(month_range(month))
+    radio_filter = ""
+    if radio_id:
+        radio_filter = " AND p.id_radio = ?"
+        params.append(radio_id)
+    if mode == "detail":
+        sql = f"""
+        SELECT p.data, p.ora, p.durata, p.titolo, p.artista,
+               m.codice_siae, m.codice_iswc, m.autore, m.compositore
+        FROM passaggi p
+        LEFT JOIN canzoni_metadati m ON p.artista_pulito = m.artista_pulito AND p.titolo_pulito = m.titolo_pulito
+        WHERE p.data >= ? AND p.data < ?{radio_filter}
+        ORDER BY p.data ASC, p.ora ASC
+        """
+    else:
+        sql = f"""
+        SELECT p.titolo_pulito AS titolo, p.artista_pulito AS artista,
+               COUNT(*) AS passaggi, SUM(p.durata) AS durata,
+               m.codice_siae, m.codice_iswc, m.autore, m.compositore
+        FROM passaggi p
+        LEFT JOIN canzoni_metadati m ON p.artista_pulito = m.artista_pulito AND p.titolo_pulito = m.titolo_pulito
+        WHERE p.data >= ? AND p.data < ?{radio_filter}
+        GROUP BY p.artista_pulito, p.titolo_pulito
+        ORDER BY p.titolo_pulito, p.artista_pulito
+        """
+    rows = [dict(r) for r in conn.execute(sql, params).fetchall()]
+    conn.close()
+    for r in rows:
+        for k in ("codice_siae", "codice_iswc", "autore", "compositore"):
+            r[k] = "" if is_empty(r.get(k)) else r[k]
+    return rows
+
 class MyHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=DIRECTORY, **kwargs)
+
+    def send_json(self, payload, code=200):
+        body = json.dumps(payload, ensure_ascii=False).encode('utf-8')
+        self.send_response(code)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def read_json_body(self):
+        content_length = int(self.headers.get('Content-Length', 0))
+        if content_length <= 0:
+            return {}
+        return json.loads(self.rfile.read(content_length).decode('utf-8'))
 
     def do_OPTIONS(self):
         self.send_response(200)
@@ -189,22 +435,7 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
             return
             
         elif path == '/api/radios':
-            radios_list = [
-                {"id": "subasio", "name": "Radio Subasio"},
-                {"id": "divina", "name": "Radio Divina"},
-                {"id": "mitology", "name": "Radio Mitology"},
-                {"id": "nostalgia", "name": "Radio Nostalgia"},
-                {"id": "toscana", "name": "Radio Toscana"},
-                {"id": "italia", "name": "Radio Italia"},
-                {"id": "rds", "name": "RDS"},
-                {"id": "rtl1025", "name": "RTL 102.5"},
-                {"id": "birikina", "name": "Radio Birikina"},
-                {"id": "bruno", "name": "Radio Bruno"},
-                {"id": "kisskiss", "name": "Radio Kiss Kiss"},
-                {"id": "m2o", "name": "Radio m2o"},
-                {"id": "propostaaosta", "name": "Proposta Aosta"},
-                {"id": "capital", "name": "Radio Capital"}
-            ]
+            radios_list = RADIOS
             self.send_response(200)
             self.send_header('Access-Control-Allow-Origin', '*')
             self.send_header('Content-Type', 'application/json')
@@ -212,83 +443,81 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(radios_list).encode('utf-8'))
             return
 
-        # 2. API: Dati Dashboard
+        elif path == '/api/months':
+            try:
+                self.send_json({"success": True, "months": get_available_months()})
+            except Exception as e:
+                self.send_json({"success": False, "error": str(e)}, 500)
+            return
+
+        # 2. API: Dati Dashboard (filtri, ricerca e paginazione lato server)
         elif path == '/api/dashboard_data':
             month = query.get('month', [''])[0] # YYYY-MM
             radio_id = query.get('radio_id', [None])[0]
             if radio_id == 'all' or not radio_id:
                 radio_id = None
-                
-            if not month:
-                self.send_response(400)
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({"success": False, "error": "Parametro month richiesto (YYYY-MM)"}).encode('utf-8'))
-                return
-                
-            try:
-                songs = get_monthly_unique_songs(month, radio_id)
-                songs_list = []
-                
-                stats = {"total": 0, "green": 0, "yellow": 0, "red": 0}
-                
-                for row in songs:
-                    siae = row["codice_siae"] or ""
-                    iswc = row["codice_iswc"] or ""
-                    isrc = row["codice_isrc"] or ""
-                    composer = row["compositore"] or ""
-                    author = row["autore"] or ""
-                    label = row["casa_discografica"] or ""
-                    year = row["anno_pubblicazione"] or ""
-                    
-                    # Helper per verificare se un campo è effettivamente vuoto
-                    def is_empty(val):
-                        return not val or val.strip() in ['', '-', 'N/A', 'N/D']
 
-                    has_siae = not is_empty(siae)
-                    has_isrc = not is_empty(isrc)
-                    has_iswc = not is_empty(iswc)
-                    has_writer = not (is_empty(composer) and is_empty(author))
-                    has_label_or_year = not (is_empty(label) and is_empty(year))
-                    
-                    if (has_siae or has_iswc) and has_isrc and has_writer and has_label_or_year:
-                        status = "green"
-                        stats["green"] += 1
-                    elif not has_siae and not has_iswc and not has_isrc and not has_writer and not has_label_or_year:
-                        status = "red"
-                        stats["red"] += 1
-                    else:
-                        status = "yellow"
-                        stats["yellow"] += 1
-                        
-                    stats["total"] += 1
-                    
-                    songs_list.append({
-                        "artista_pulito": row["artista_pulito"],
-                        "titolo_pulito": row["titolo_pulito"],
-                        "codice_siae": siae,
-                        "codice_iswc": iswc,
-                        "codice_isrc": isrc,
-                        "compositore": composer,
-                        "autore": author,
-                        "casa_discografica": label,
-                        "anno_pubblicazione": year,
-                        "status": status
-                    })
-                    
-                self.send_response(200)
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({"success": True, "songs": songs_list, "stats": stats}).encode('utf-8'))
-                
+            if not month:
+                self.send_json({"success": False, "error": "Parametro month richiesto (YYYY-MM)"}, 400)
+                return
+
+            try:
+                q = query.get('q', [''])[0].strip()
+                status = query.get('status', ['all'])[0]
+                sort = query.get('sort', ['plays'])[0]
+                page = max(1, int(query.get('page', ['1'])[0] or 1))
+                size = min(500, max(10, int(query.get('size', ['100'])[0] or 100)))
+                refresh = query.get('refresh', ['0'])[0] == '1'
+
+                songs = get_songs_cached(month, radio_id, refresh)
+                stats = {"total": len(songs), "green": 0, "yellow": 0, "red": 0, "plays": 0, "plays_green": 0}
+                for song in songs:
+                    stats[song["status"]] += 1
+                    stats["plays"] += song["passaggi"]
+                    if song["status"] == "green":
+                        stats["plays_green"] += song["passaggi"]
+
+                filtered = filter_songs(songs, q, status, sort)
+                pages = max(1, (len(filtered) + size - 1) // size)
+                page = min(page, pages)
+
+                self.send_json({
+                    "success": True,
+                    "songs": filtered[(page - 1) * size: page * size],
+                    "stats": stats,
+                    "filtered": len(filtered),
+                    "page": page,
+                    "pages": pages,
+                    "size": size
+                })
             except Exception as e:
-                self.send_response(500)
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({"success": False, "error": str(e)}).encode('utf-8'))
+                self.send_json({"success": False, "error": str(e)}, 500)
+            return
+
+        # API: Dati per l'anteprima di stampa del borderò
+        elif path == '/api/bordereau':
+            month = query.get('month', [''])[0]
+            radio_id = query.get('radio_id', [None])[0]
+            if radio_id == 'all' or not radio_id:
+                radio_id = None
+            mode = query.get('mode', ['summary'])[0]
+            if not month:
+                self.send_json({"success": False, "error": "Parametro month richiesto (YYYY-MM)"}, 400)
+                return
+            if mode == 'detail' and not radio_id:
+                self.send_json({"success": False, "error": "Il dettaglio passaggi richiede una singola radio"}, 400)
+                return
+            try:
+                self.send_json({
+                    "success": True,
+                    "month": month,
+                    "radio_id": radio_id or "all",
+                    "radio_name": RADIO_NAMES.get(radio_id, radio_id) if radio_id else "Tutte le emittenti",
+                    "mode": mode,
+                    "rows": get_bordereau_rows(month, radio_id, mode)
+                })
+            except Exception as e:
+                self.send_json({"success": False, "error": str(e)}, 500)
             return
 
         # 3. Report SCF (Excel)
@@ -317,9 +546,9 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
                     m.codice_isrc
                 FROM passaggi p
                 LEFT JOIN canzoni_metadati m ON p.artista_pulito = m.artista_pulito AND p.titolo_pulito = m.titolo_pulito
-                WHERE p.data LIKE ?
+                WHERE p.data >= ? AND p.data < ?
                 '''
-                params = [f"{month}%"]
+                params = list(month_range(month))
                 if radio_id:
                     sql += " AND p.id_radio = ?"
                     params.append(radio_id)
@@ -331,7 +560,7 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
                 
                 output = io.BytesIO()
                 workbook = xlsxwriter.Workbook(output)
-                worksheet = workbook.add_sheet('Report SCF')
+                worksheet = workbook.add_worksheet('Report SCF')
                 
                 headers = ['Titolo', 'Artista', 'Produttore (Label)', 'Anno', 'Codice ISRC', 'Numero di passaggi totali nel mese', 'Minuti totali di trasmissione']
                 for col_num, header in enumerate(headers):
@@ -391,9 +620,9 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
                     m.compositore
                 FROM passaggi p
                 LEFT JOIN canzoni_metadati m ON p.artista_pulito = m.artista_pulito AND p.titolo_pulito = m.titolo_pulito
-                WHERE p.data LIKE ?
+                WHERE p.data >= ? AND p.data < ?
                 '''
-                params = [f"{month}%"]
+                params = list(month_range(month))
                 if radio_id:
                     sql += " AND p.id_radio = ?"
                     params.append(radio_id)
@@ -464,9 +693,9 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
                     m.compositore
                 FROM passaggi p
                 LEFT JOIN canzoni_metadati m ON p.artista_pulito = m.artista_pulito AND p.titolo_pulito = m.titolo_pulito
-                WHERE p.data LIKE ?
+                WHERE p.data >= ? AND p.data < ?
                 '''
-                params = [f"{month}%"]
+                params = list(month_range(month))
                 if radio_id:
                     sql += " AND p.id_radio = ?"
                     params.append(radio_id)
@@ -681,38 +910,44 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
                 if not artist_clean or not title_clean:
                     raise ValueError("Dati artista_pulito e titolo_pulito obbligatori")
                     
+                values = {field: str(data.get(field, '') or '').strip() for field in METADATA_FIELDS}
                 update_metadata(
                     artist_clean=artist_clean,
                     title_clean=title_clean,
-                    siae=data.get('codice_siae', ''),
-                    iswc=data.get('codice_iswc', ''),
-                    isrc=data.get('codice_isrc', ''),
-                    compositore=data.get('compositore', ''),
-                    autore=data.get('autore', ''),
-                    label=data.get('casa_discografica', ''),
-                    year=data.get('anno_pubblicazione', '')
+                    siae=values['codice_siae'],
+                    iswc=values['codice_iswc'],
+                    isrc=values['codice_isrc'],
+                    compositore=values['compositore'],
+                    autore=values['autore'],
+                    label=values['casa_discografica'],
+                    year=values['anno_pubblicazione']
                 )
-                
-                self.send_response(200)
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({"success": True}).encode('utf-8'))
-                
-                # Sincronizza con Google Sheets in background
-                try:
-                    import threading
-                    from google_sheets_sync import sync_metadata
-                    t = threading.Thread(target=sync_metadata)
-                    t.start()
-                except Exception as ex:
-                    print(f"Errore avvio sync Sheets: {ex}")
+                update_cached_song(artist_clean, title_clean, values)
+
+                song = apply_song_status(dict(values, artista_pulito=artist_clean, titolo_pulito=title_clean))
+                self.send_json({"success": True, "song": song})
+
+                # Invia a Google Sheets solo questo brano (in background, raggruppato)
+                queue_sheets_push(artist_clean, title_clean)
             except Exception as e:
                 self.send_response(400)
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
                 self.wfile.write(json.dumps({"success": False, "error": str(e)}).encode('utf-8'))
+            return
+
+        # API: Ricerca online dei metadati di un singolo brano (non salva, propone)
+        elif self.path == '/api/song/lookup':
+            try:
+                data = self.read_json_body()
+                artist_clean = data.get('artista_pulito')
+                title_clean = data.get('titolo_pulito')
+                if not artist_clean or not title_clean:
+                    raise ValueError("Dati artista_pulito e titolo_pulito obbligatori")
+                self.send_json({"success": True, "found": lookup_song_online(artist_clean, title_clean)})
+            except Exception as e:
+                self.send_json({"success": False, "error": str(e)}, 400)
             return
 
         # 4. API Nuova: Importazione log proprietari MB Studio / DJ Pro
@@ -728,7 +963,8 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
                     raise ValueError("Parametri radio_id e file_content richiesti")
                     
                 count = parse_log_file(file_content, radio_id)
-                
+                invalidate_songs_cache()
+
                 self.send_response(200)
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.send_header('Content-Type', 'application/json')
@@ -755,7 +991,8 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
                     raise ValueError("Parametri radio_id e date (YYYY-MM-DD) richiesti")
                     
                 success, msg = scrape_retro(radio_id, date_str)
-                
+                invalidate_songs_cache()
+
                 self.send_response(200 if success else 400)
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.send_header('Content-Type', 'application/json')
@@ -829,10 +1066,18 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
 
+class ThreadingServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    # Ogni richiesta in un thread: scraper e ricerche online non bloccano più la dashboard
+    daemon_threads = True
+    allow_reuse_address = True
+
 if __name__ == "__main__":
-    socketserver.TCPServer.allow_reuse_address = True
     try:
-        with socketserver.TCPServer(("", PORT), MyHandler) as httpd:
+        init_db()  # crea tabelle e indici mancanti (il primo avvio può richiedere qualche secondo)
+    except Exception as e:
+        print(f"Errore inizializzazione database: {e}")
+    try:
+        with ThreadingServer(("", PORT), MyHandler) as httpd:
             print(f"\n========================================================")
             print(f"  [SERVER] SERVER INTERFACCIA WEB & REPORT ATTIVO!")
             print(f"  [SERVER] Dashboard: http://localhost:{PORT}/dashboard.html")

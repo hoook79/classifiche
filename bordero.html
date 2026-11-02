@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Borderò</title>
+    <style>
+        @page { size: A4 landscape; margin: 12mm 10mm; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #111; background: #e9ecf1; }
+        .toolbar {
+            position: sticky; top: 0; z-index: 5; display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;
+            background: #1b2230; color: #fff; padding: 0.7rem 1.25rem; font-size: 14px;
+        }
+        .toolbar strong { margin-right: auto; }
+        .toolbar button, .toolbar select, .toolbar label {
+            font: inherit; border-radius: 6px; border: 1px solid #3a4558; background: #273043; color: #fff; padding: 0.4rem 0.8rem;
+        }
+        .toolbar button { cursor: pointer; }
+        .toolbar .primary { background: #2563eb; border-color: #2563eb; font-weight: 600; }
+        .toolbar label { display: inline-flex; gap: 0.4rem; align-items: center; cursor: pointer; }
+
+        .sheet { background: #fff; max-width: 287mm; margin: 1.25rem auto; padding: 10mm; box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
+        .doc-head { display: grid; grid-template-columns: 1fr auto; gap: 1rem; border-bottom: 2px solid #111; padding-bottom: 4mm; margin-bottom: 4mm; }
+        .doc-head h1 { font-size: 15pt; letter-spacing: 0.02em; }
+        .doc-head .meta { display: grid; grid-template-columns: auto auto; gap: 1mm 4mm; font-size: 9.5pt; }
+        .doc-head .meta span:nth-child(odd) { color: #555; }
+        .fill { display: inline-block; min-width: 55mm; border-bottom: 1px solid #999; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+        thead { display: table-header-group; }
+        th { background: #eceff3; text-align: left; font-weight: 700; border: 1px solid #b8bec8; padding: 1.4mm 1.6mm; }
+        td { border: 1px solid #d0d4db; padding: 1.2mm 1.6mm; vertical-align: top; }
+        tr { page-break-inside: avoid; }
+        .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+        .code { font-family: Consolas, 'Courier New', monospace; white-space: nowrap; }
+        .missing { background: #fff4d6; }
+        body.no-highlight .missing { background: none; }
+        tfoot td { font-weight: 700; background: #f5f6f8; }
+
+        .signature { display: grid; grid-template-columns: 1fr 1fr; gap: 20mm; margin-top: 12mm; font-size: 9.5pt; page-break-inside: avoid; }
+        .signature div { border-top: 1px solid #333; padding-top: 1.5mm; text-align: center; color: #333; }
+        .note { margin-top: 3mm; font-size: 8pt; color: #555; }
+        .state { text-align: center; padding: 3rem; color: #555; }
+
+        @media print {
+            body { background: #fff; }
+            .toolbar { display: none; }
+            .sheet { box-shadow: none; margin: 0; padding: 0; max-width: none; }
+            body.no-highlight .missing, .missing { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <strong id="tbTitle">Borderò</strong>
+        <select id="modeSelect" aria-label="Tipo di borderò">
+            <option value="summary">Riepilogo per brano</option>
+            <option value="detail">Dettaglio passaggi</option>
+        </select>
+        <label><input type="checkbox" id="highlightToggle" checked> Evidenzia brani senza codici</label>
+        <button class="primary" onclick="window.print()">🖨 Stampa / Salva PDF</button>
+    </div>
+
+    <div class="sheet" id="sheet">
+        <div class="state">Caricamento…</div>
+    </div>
+
+    <script>
+        const MONTHS_IT = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+        const qs = new URLSearchParams(location.search);
+        const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const fmt = n => Number(n || 0).toLocaleString('it-IT');
+        const mmss = sec => { sec = Math.round(sec || 0); const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s).padStart(2, '0'); };
+        const itDate = iso => { const [y, m, d] = (iso || '').split('-'); return d ? `${d}/${m}/${y}` : iso; };
+
+        document.getElementById('modeSelect').value = qs.get('mode') === 'detail' ? 'detail' : 'summary';
+        if (!qs.get('radio_id') || qs.get('radio_id') === 'all') document.querySelector('#modeSelect option[value="detail"]').disabled = true;
+        document.getElementById('modeSelect').addEventListener('change', e => { qs.set('mode', e.target.value); location.search = qs.toString(); });
+        document.getElementById('highlightToggle').addEventListener('change', e => document.body.classList.toggle('no-highlight', !e.target.checked));
+
+        function authors(r) {
+            const comp = r.compositore, aut = r.autore;
+            if (comp && aut && comp !== aut) return `${esc(comp)} <span style="color:#666">(M)</span> / ${esc(aut)} <span style="color:#666">(T)</span>`;
+            return esc(comp || aut || '');
+        }
+
+        async function load() {
+            const sheet = document.getElementById('sheet');
+            try {
+                const res = await (await fetch('/api/bordereau?' + qs.toString())).json();
+                if (!res.success) throw new Error(res.error);
+                const [y, m] = res.month.split('-');
+                const period = `${MONTHS_IT[+m - 1]} ${y}`;
+                const detail = res.mode === 'detail';
+                const title = detail ? 'Programma musicale – dettaglio passaggi' : 'Programma musicale – riepilogo opere trasmesse';
+                document.title = `Borderò ${res.radio_name} ${period}`;
+                document.getElementById('tbTitle').textContent = `${res.radio_name} · ${period} · ${fmt(res.rows.length)} righe`;
+
+                const rows = res.rows;
+                const missingCount = rows.filter(r => !r.codice_siae && !r.codice_iswc).length;
+                const totalPlays = detail ? rows.length : rows.reduce((a, r) => a + r.passaggi, 0);
+                const totalSec = rows.reduce((a, r) => a + (r.durata || 0), 0);
+
+                let head, body, foot;
+                if (detail) {
+                    head = '<tr><th>N.</th><th>Data</th><th>Ora</th><th>Titolo</th><th>Interprete</th><th>Autori</th><th>Cod. SIAE</th><th>ISWC</th><th class="num">Durata</th></tr>';
+                    body = rows.map((r, i) => `<tr class="${!r.codice_siae && !r.codice_iswc ? 'missing' : ''}">
+                        <td class="num">${i + 1}</td><td>${itDate(r.data)}</td><td>${esc((r.ora || '').slice(0, 5))}</td>
+                        <td>${esc(r.titolo)}</td><td>${esc(r.artista)}</td><td>${authors(r)}</td>
+                        <td class="code">${esc(r.codice_siae)}</td><td class="code">${esc(r.codice_iswc)}</td><td class="num">${mmss(r.durata)}</td></tr>`).join('');
+                    foot = `<tr><td colspan="8">Totale passaggi: ${fmt(totalPlays)}</td><td class="num">${mmss(totalSec)}</td></tr>`;
+                } else {
+                    head = '<tr><th>N.</th><th>Titolo</th><th>Interprete</th><th>Autori</th><th>Cod. SIAE</th><th>ISWC</th><th class="num">Passaggi</th><th class="num">Durata tot.</th></tr>';
+                    body = rows.map((r, i) => `<tr class="${!r.codice_siae && !r.codice_iswc ? 'missing' : ''}">
+                        <td class="num">${i + 1}</td><td>${esc(r.titolo)}</td><td>${esc(r.artista)}</td><td>${authors(r)}</td>
+                        <td class="code">${esc(r.codice_siae)}</td><td class="code">${esc(r.codice_iswc)}</td>
+                        <td class="num">${fmt(r.passaggi)}</td><td class="num">${mmss(r.durata)}</td></tr>`).join('');
+                    foot = `<tr><td colspan="6">Totale: ${fmt(rows.length)} opere</td><td class="num">${fmt(totalPlays)}</td><td class="num">${mmss(totalSec)}</td></tr>`;
+                }
+
+                sheet.innerHTML = `
+                    <div class="doc-head">
+                        <div>
+                            <h1>${title}</h1>
+                            <div style="margin-top:2mm; font-size:11pt"><strong>Emittente:</strong> ${esc(res.radio_name)}</div>
+                        </div>
+                        <div class="meta">
+                            <span>Periodo</span><strong>${period}</strong>
+                            <span>Opere</span><strong>${fmt(detail ? new Set(rows.map(r => r.titolo + '|' + r.artista)).size : rows.length)}</strong>
+                            <span>Passaggi</span><strong>${fmt(totalPlays)}</strong>
+                            <span>Durata totale</span><strong>${mmss(totalSec)}</strong>
+                            <span>Codice emittente</span><span class="fill">&nbsp;</span>
+                        </div>
+                    </div>
+                    ${rows.length ? `<table><thead>${head}</thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table>` : '<div class="state">Nessun passaggio registrato nel periodo.</div>'}
+                    ${missingCount ? `<p class="note">Righe evidenziate: ${fmt(missingCount)} senza codice SIAE né ISWC.</p>` : ''}
+                    <p class="note">(M) musica · (T) testo · Durate stimate dai passaggi registrati. Generato il ${new Date().toLocaleDateString('it-IT')}.</p>
+                    <div class="signature"><div>Luogo e data</div><div>Timbro e firma del legale rappresentante</div></div>`;
+            } catch (err) {
+                sheet.innerHTML = `<div class="state" style="color:#b42318">Errore: ${esc(err.message || err)}</div>`;
+            }
+        }
+        load();
+    </script>
+</body>
+</html>

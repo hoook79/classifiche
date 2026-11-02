@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Borderò e Metadati</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0d1117;
+            --surface: #151b26;
+            --surface-2: #1c2433;
+            --border: #273043;
+            --text: #e6e9ef;
+            --muted: #8b95a7;
+            --primary: #4f8cff;
+            --primary-soft: rgba(79, 140, 255, 0.14);
+            --green: #2fbf71;
+            --yellow: #e8a33d;
+            --red: #e5534b;
+            --green-soft: rgba(47, 191, 113, 0.14);
+            --yellow-soft: rgba(232, 163, 61, 0.14);
+            --red-soft: rgba(229, 83, 75, 0.14);
+            --radius: 10px;
+            --mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+        }
+        @media (prefers-color-scheme: light) {
+            :root:not([data-theme="dark"]) {
+                --bg: #f4f6fa;
+                --surface: #ffffff;
+                --surface-2: #f0f3f8;
+                --border: #dde3ec;
+                --text: #18202e;
+                --muted: #5d6879;
+                --primary: #2563eb;
+                --primary-soft: rgba(37, 99, 235, 0.1);
+            }
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Outfit', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+            line-height: 1.45;
+        }
+        a { color: var(--primary); text-decoration: none; }
+        button, select, input { font: inherit; color: inherit; }
+
+        /* --- TOP BAR --- */
+        .topbar {
+            position: sticky; top: 0; z-index: 30;
+            display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+            padding: 0.75rem 1.5rem;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+        }
+        .brand { font-weight: 700; font-size: 1.05rem; margin-right: auto; white-space: nowrap; }
+        .brand span { color: var(--muted); font-weight: 500; }
+        .context { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+        .control {
+            background: var(--surface-2); border: 1px solid var(--border);
+            border-radius: 8px; padding: 0.45rem 0.7rem; outline: none;
+        }
+        .control:focus { border-color: var(--primary); }
+        select.control { cursor: pointer; }
+        .btn {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            background: var(--surface-2); border: 1px solid var(--border);
+            border-radius: 8px; padding: 0.45rem 0.85rem; cursor: pointer;
+            font-weight: 500; white-space: nowrap;
+        }
+        .btn:hover { border-color: var(--primary); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+        .btn-primary:hover { filter: brightness(1.1); }
+        .btn-ghost { background: transparent; border-color: transparent; }
+        .menu { position: relative; }
+        .menu-list {
+            display: none; position: absolute; right: 0; top: calc(100% + 6px);
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius); min-width: 260px; padding: 0.35rem;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+        }
+        .menu.open .menu-list { display: block; }
+        .menu-list button {
+            display: block; width: 100%; text-align: left; background: none; border: none;
+            padding: 0.55rem 0.7rem; border-radius: 6px; cursor: pointer;
+        }
+        .menu-list button:hover { background: var(--surface-2); }
+        .menu-list small { display: block; color: var(--muted); }
+
+        main { padding: 1.25rem 1.5rem 3rem; max-width: 1800px; margin: 0 auto; }
+
+        /* --- KPI --- */
+        .kpis { display: grid; grid-template-columns: 1.6fr repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1rem; }
+        .kpi {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 0.9rem 1rem;
+        }
+        button.kpi { text-align: left; cursor: pointer; }
+        button.kpi:hover, button.kpi.active { border-color: currentColor; }
+        .kpi-label { color: var(--muted); font-size: 0.8rem; font-weight: 500; }
+        .kpi-value { font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .kpi-sub { color: var(--muted); font-size: 0.8rem; }
+        .kpi.green { color: var(--green); } .kpi.yellow { color: var(--yellow); } .kpi.red { color: var(--red); }
+        .kpi.green .kpi-value, .kpi.yellow .kpi-value, .kpi.red .kpi-value { color: var(--text); }
+        .coverage-bar { height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; display: flex; margin: 0.5rem 0 0.35rem; }
+        .coverage-bar div { height: 100%; transition: width 0.3s; }
+
+        /* --- EXPORT --- */
+        .exports {
+            display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 0.75rem 1rem; margin-bottom: 1rem;
+        }
+        .exports h2 { font-size: 0.95rem; margin-right: 0.5rem; }
+        .exports .spacer { flex: 1; }
+        .export-warning { color: var(--yellow); font-size: 0.85rem; }
+        .export-warning.ok { color: var(--green); }
+
+        /* --- PROGRESS ARRICCHIMENTO --- */
+        .progress-card {
+            display: none; background: var(--primary-soft); border: 1px solid var(--primary);
+            border-radius: var(--radius); padding: 0.75rem 1rem; margin-bottom: 1rem;
+        }
+        .progress-card.show { display: block; }
+        .progress-track { height: 6px; background: var(--surface-2); border-radius: 99px; overflow: hidden; margin-top: 0.5rem; }
+        .progress-track div { height: 100%; background: var(--primary); width: 0; transition: width 0.3s; }
+
+        /* --- WORKSPACE --- */
+        .workspace { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; align-items: start; }
+        .workspace.panel-open { grid-template-columns: minmax(0, 1fr) 400px; }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+        .toolbar { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; padding: 0.75rem; border-bottom: 1px solid var(--border); }
+        .search { flex: 1; min-width: 220px; }
+        .segmented { display: inline-flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 2px; }
+        .segmented button { background: none; border: none; padding: 0.35rem 0.7rem; border-radius: 6px; cursor: pointer; color: var(--muted); font-weight: 500; }
+        .segmented button.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+
+        .table-wrap { overflow: auto; max-height: calc(100vh - 330px); min-height: 300px; }
+        table { width: 100%; border-collapse: collapse; }
+        thead th {
+            position: sticky; top: 0; z-index: 1; background: var(--surface-2);
+            text-align: left; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em;
+            color: var(--muted); padding: 0.55rem 0.65rem; white-space: nowrap; border-bottom: 1px solid var(--border);
+        }
+        tbody td { padding: 0.5rem 0.65rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        tbody tr { cursor: pointer; }
+        tbody tr:hover { background: var(--surface-2); }
+        tbody tr.selected { background: var(--primary-soft); }
+        .num { text-align: right; font-variant-numeric: tabular-nums; }
+        .mono { font-family: var(--mono); font-size: 0.8rem; }
+        .muted { color: var(--muted); }
+        .ellipsis { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .artist { font-weight: 600; }
+        .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+        .dot.green { background: var(--green); } .dot.yellow { background: var(--yellow); } .dot.red { background: var(--red); }
+        .chip { display: inline-block; font-size: 0.7rem; padding: 0.1rem 0.45rem; border-radius: 99px; margin: 1px 2px 1px 0; white-space: nowrap; background: var(--red-soft); color: var(--red); font-weight: 500; }
+        .empty-row td { text-align: center; color: var(--muted); padding: 3rem; cursor: default; }
+
+        .pager { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.75rem; justify-content: space-between; flex-wrap: wrap; }
+        .pager .info { color: var(--muted); }
+
+        /* --- SIDE PANEL --- */
+        .panel { display: none; position: sticky; top: 72px; max-height: calc(100vh - 90px); overflow: auto; }
+        .workspace.panel-open .panel { display: block; }
+        .panel-head { padding: 1rem; border-bottom: 1px solid var(--border); }
+        .panel-head .row { display: flex; justify-content: space-between; align-items: start; gap: 0.5rem; }
+        .panel-head h3 { font-size: 1.05rem; line-height: 1.3; }
+        .panel-head .sub { color: var(--muted); margin-top: 0.15rem; }
+        .panel-body { padding: 1rem; display: grid; gap: 0.8rem; }
+        .field label { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--muted); font-weight: 500; margin-bottom: 0.25rem; }
+        .field input { width: 100%; }
+        .field input.suggested { border-color: var(--green); background: var(--green-soft); }
+        .suggest {
+            margin-top: 0.3rem; font-size: 0.78rem; background: var(--primary-soft); border: 1px dashed var(--primary);
+            border-radius: 6px; padding: 0.25rem 0.5rem; cursor: pointer; display: block; width: 100%; text-align: left;
+        }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+        .panel-actions { display: flex; gap: 0.5rem; padding: 1rem; border-top: 1px solid var(--border); flex-wrap: wrap; position: sticky; bottom: 0; background: var(--surface); }
+        .panel-actions .btn-primary { flex: 1; justify-content: center; }
+        .hint { color: var(--muted); font-size: 0.75rem; }
+        kbd { font-family: var(--mono); font-size: 0.7rem; border: 1px solid var(--border); border-radius: 4px; padding: 0 0.3rem; }
+
+        /* --- MODAL --- */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 50; align-items: center; justify-content: center; padding: 1rem; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); width: 100%; max-width: 460px; padding: 1.25rem; display: grid; gap: 0.9rem; }
+        .modal h3 { font-size: 1.05rem; }
+        .modal .actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
+
+        .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .toasts { position: fixed; bottom: 1rem; right: 1rem; display: grid; gap: 0.5rem; z-index: 60; }
+        .toast { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 8px; padding: 0.65rem 0.9rem; max-width: 380px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+        .toast.success { border-left-color: var(--green); } .toast.error { border-left-color: var(--red); } .toast.warning { border-left-color: var(--yellow); }
+
+        @media (max-width: 1100px) {
+            .kpis { grid-template-columns: 1fr 1fr; }
+            .workspace.panel-open { grid-template-columns: minmax(0, 1fr); }
+            .panel { position: fixed; inset: 0 0 0 auto; width: min(420px, 100vw); max-height: none; top: 0; z-index: 40; border-radius: 0; }
+        }
+        @media (max-width: 640px) {
+            .topbar, main { padding-left: 1rem; padding-right: 1rem; }
+            .kpis { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand">Borderò &amp; Metadati <span>· Radio monitorate</span></div>
+        <div class="context">
+            <select id="radioSelect" class="control" aria-label="Emittente">
+                <option value="all">Tutte le emittenti</option>
+            </select>
+            <select id="monthSelect" class="control" aria-label="Mese"></select>
+            <button class="btn" onclick="loadData({refresh: true})" title="Ricarica i dati dal database">↻ Aggiorna</button>
+            <div class="menu" id="toolsMenu">
+                <button class="btn" onclick="toggleMenu(event)">Strumenti ▾</button>
+                <div class="menu-list">
+                    <button onclick="openModal('uploadModal')">Carica log playout<small>MB Studio / DJ Pro</small></button>
+                    <button onclick="openModal('scraperModal')">Scraper retroattivo<small>Online Radio Box, ultimi 7 giorni</small></button>
+                    <button onclick="triggerEnrichment()">Arricchisci brani incompleti<small>Ricerca automatica in background</small></button>
+                    <button onclick="triggerSheetsSync()">Sincronizzazione completa Google Sheets<small>Scarica e ricarica tutto il foglio</small></button>
+                </div>
+            </div>
+            <a class="btn btn-ghost" href="classifica_radio.html">Classifiche →</a>
+        </div>
+    </header>
+
+    <main>
+        <section class="kpis">
+            <div class="kpi">
+                <div class="kpi-label">Passaggi coperti da metadati completi</div>
+                <div class="kpi-value" id="kpiCoverage">–</div>
+                <div class="coverage-bar">
+                    <div id="barGreen" style="background: var(--green); width: 0"></div>
+                    <div id="barYellow" style="background: var(--yellow); width: 0"></div>
+                    <div id="barRed" style="background: var(--red); width: 0"></div>
+                </div>
+                <div class="kpi-sub" id="kpiTotals">–</div>
+            </div>
+            <button class="kpi green" data-status="green" onclick="setStatus('green')">
+                <div class="kpi-label">🟢 Completi</div>
+                <div class="kpi-value" id="kpiGreen">–</div>
+                <div class="kpi-sub">Pronti per il borderò</div>
+            </button>
+            <button class="kpi yellow" data-status="yellow" onclick="setStatus('yellow')">
+                <div class="kpi-label">🟡 Parziali</div>
+                <div class="kpi-value" id="kpiYellow">–</div>
+                <div class="kpi-sub">Manca qualche dato</div>
+            </button>
+            <button class="kpi red" data-status="red" onclick="setStatus('red')">
+                <div class="kpi-label">🔴 Senza dati</div>
+                <div class="kpi-value" id="kpiRed">–</div>
+                <div class="kpi-sub">Nessun codice</div>
+            </button>
+        </section>
+
+        <section class="progress-card" id="enrichCard">
+            <div style="display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+                <strong><span class="spinner"></span> Arricchimento automatico in corso</strong>
+                <span id="enrichText">0 / 0</span>
+            </div>
+            <div class="progress-track"><div id="enrichBar"></div></div>
+        </section>
+
+        <section class="exports">
+            <h2>Stampa ed esporta</h2>
+            <button class="btn btn-primary" onclick="openBordereau('summary')">🖨 Borderò (riepilogo brani)</button>
+            <button class="btn" id="btnDetail" onclick="openBordereau('detail')">🖨 Dettaglio passaggi</button>
+            <button class="btn" onclick="downloadReport('siae')">SIAE .txt</button>
+            <button class="btn" onclick="downloadReport('scf')">SCF .xlsx</button>
+            <button class="btn" onclick="downloadReport('lea')">LEA / Soundreef .csv</button>
+            <span class="spacer"></span>
+            <span class="export-warning" id="exportWarning"></span>
+        </section>
+
+        <section class="workspace" id="workspace">
+            <div class="card">
+                <div class="toolbar">
+                    <input id="searchInput" class="control search" type="search" placeholder="Cerca artista, titolo, codice o autore…  (premi / )" autocomplete="off">
+                    <div class="segmented" id="statusFilter">
+                        <button data-status="incomplete" class="active">Da completare</button>
+                        <button data-status="all">Tutti</button>
+                        <button data-status="red">Rossi</button>
+                        <button data-status="yellow">Gialli</button>
+                        <button data-status="green">Verdi</button>
+                    </div>
+                    <select id="sortSelect" class="control" aria-label="Ordina">
+                        <option value="plays">Più trasmessi</option>
+                        <option value="status">Più incompleti</option>
+                        <option value="artist">Artista A–Z</option>
+                        <option value="title">Titolo A–Z</option>
+                    </select>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th class="num">Pass.</th>
+                                <th>Artista</th>
+                                <th>Titolo</th>
+                                <th>SIAE</th>
+                                <th>ISWC</th>
+                                <th>ISRC</th>
+                                <th>Autori</th>
+                                <th>Label</th>
+                                <th>Anno</th>
+                                <th>Mancano</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody">
+                            <tr class="empty-row"><td colspan="11">Caricamento…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pager">
+                    <span class="info" id="pagerInfo"></span>
+                    <div style="display:flex; gap:0.4rem; align-items:center;">
+                        <button class="btn" id="prevPage" onclick="changePage(-1)">‹</button>
+                        <span id="pageLabel" class="muted"></span>
+                        <button class="btn" id="nextPage" onclick="changePage(1)">›</button>
+                        <select id="sizeSelect" class="control" aria-label="Righe per pagina">
+                            <option value="50">50</option>
+                            <option value="100" selected>100</option>
+                            <option value="250">250</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <aside class="card panel" id="panel">
+                <form id="editForm" onsubmit="saveSong(event)">
+                    <div class="panel-head">
+                        <div class="row">
+                            <div>
+                                <h3 id="pTitle"></h3>
+                                <div class="sub" id="pArtist"></div>
+                            </div>
+                            <button type="button" class="btn btn-ghost" onclick="closePanel()" title="Chiudi (Esc)">✕</button>
+                        </div>
+                        <div style="margin-top:0.6rem; display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+                            <span id="pStatus"></span>
+                            <span class="muted" id="pPlays"></span>
+                        </div>
+                        <button type="button" class="btn" id="lookupBtn" style="margin-top:0.75rem; width:100%; justify-content:center;" onclick="lookupOnline()">🔎 Cerca dati online</button>
+                    </div>
+                    <div class="panel-body">
+                        <div class="grid-2">
+                            <div class="field"><label for="f_codice_siae">Codice SIAE</label><input class="control mono" id="f_codice_siae" placeholder="Es. 12345678"></div>
+                            <div class="field"><label for="f_codice_iswc">ISWC</label><input class="control mono" id="f_codice_iswc" placeholder="T-302.190.111-2"></div>
+                        </div>
+                        <div class="field"><label for="f_codice_isrc">ISRC</label><input class="control mono" id="f_codice_isrc" placeholder="IT0002134567"></div>
+                        <div class="field"><label for="f_compositore">Compositore (musica)</label><input class="control" id="f_compositore"></div>
+                        <div class="field"><label for="f_autore">Autore (testo)</label><input class="control" id="f_autore"></div>
+                        <div class="grid-2">
+                            <div class="field"><label for="f_casa_discografica">Casa discografica</label><input class="control" id="f_casa_discografica"></div>
+                            <div class="field"><label for="f_anno_pubblicazione">Anno</label><input class="control" id="f_anno_pubblicazione" inputmode="numeric"></div>
+                        </div>
+                        <div class="hint">
+                            <a id="siaeLink" target="_blank" rel="noopener" href="#">Cerca codici e autori sul web ↗</a>
+                        </div>
+                    </div>
+                    <div class="panel-actions">
+                        <button type="button" class="btn" onclick="moveSelection(-1)" title="Brano precedente (Alt+↑)">↑</button>
+                        <button type="button" class="btn" onclick="moveSelection(1)" title="Brano successivo (Alt+↓)">↓</button>
+                        <button type="button" class="btn" onclick="saveSong(null, false)">Salva</button>
+                        <button type="submit" class="btn btn-primary">Salva e successivo</button>
+                        <div class="hint" style="width:100%">
+                            <kbd>Invio</kbd> salva e passa al successivo · <kbd>Esc</kbd> chiude · <kbd>Alt</kbd>+<kbd>↑↓</kbd> naviga
+                        </div>
+                    </div>
+                </form>
+            </aside>
+        </section>
+    </main>
+
+    <!-- CARICA LOG -->
+    <div class="modal-overlay" id="uploadModal">
+        <div class="modal">
+            <h3>Importa log playout</h3>
+            <div class="field">
+                <label for="uploadRadioSelect">Emittente</label>
+                <select id="uploadRadioSelect" class="control" style="width:100%"></select>
+            </div>
+            <div class="field">
+                <label for="logFileInput">File di log (.txt o .csv)</label>
+                <input type="file" id="logFileInput" accept=".txt,.csv">
+                <p class="hint" style="margin-top:0.3rem">Formati: MB Studio (DD-MM-YYYY HH:MM:SS|TITOLO|ARTISTA) e DJ Pro (DD-MM-YYYY HH:MM:SS - TITOLO - ARTISTA)</p>
+            </div>
+            <div class="actions">
+                <button class="btn" onclick="closeModal('uploadModal')">Annulla</button>
+                <button class="btn btn-primary" onclick="uploadLogFile()">Importa</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRAPER -->
+    <div class="modal-overlay" id="scraperModal">
+        <div class="modal">
+            <h3>Scraper retroattivo</h3>
+            <div class="field">
+                <label for="scraperRadioSelect">Emittente</label>
+                <select id="scraperRadioSelect" class="control" style="width:100%"></select>
+            </div>
+            <div class="field">
+                <label for="scraperDateInput">Data</label>
+                <input type="date" id="scraperDateInput" class="control" style="width:100%">
+                <p class="hint" style="margin-top:0.3rem">Interroga Online Radio Box a ritroso: disponibili gli ultimi 7 giorni.</p>
+            </div>
+            <div class="actions">
+                <button class="btn" onclick="closeModal('scraperModal')">Annulla</button>
+                <button class="btn btn-primary" onclick="runScraperRetro()">Avvia</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toasts" id="toasts"></div>
+
+    <script>
+        const FIELDS = ['codice_siae', 'codice_iswc', 'codice_isrc', 'compositore', 'autore', 'casa_discografica', 'anno_pubblicazione'];
+        const MONTHS_IT = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+        const STATUS_LABEL = { green: 'Completo', yellow: 'Parziale', red: 'Senza dati' };
+
+        const state = { status: 'incomplete', sort: 'plays', q: '', page: 1, size: 100, pages: 1, songs: [], stats: null, selected: -1 };
+        let requestSeq = 0;
+
+        const $ = id => document.getElementById(id);
+        const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const fmt = n => Number(n || 0).toLocaleString('it-IT');
+        const blank = v => !v || ['-', 'N/A', 'N/D'].includes(String(v).trim());
+
+        function store(key, value) { try { localStorage.setItem('bordero.' + key, value); } catch (e) {} }
+        function recall(key) { try { return localStorage.getItem('bordero.' + key); } catch (e) { return null; } }
+
+        // --- AVVIO ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            const yesterday = new Date(Date.now() - 86400000);
+            $('scraperDateInput').value = yesterday.toISOString().slice(0, 10);
+
+            state.status = recall('status') || 'incomplete';
+            state.sort = recall('sort') || 'plays';
+            $('sortSelect').value = state.sort;
+            syncStatusButtons();
+
+            await Promise.all([loadRadios(), loadMonths()]);
+            loadData();
+            checkEnrichmentStatus();
+
+            $('radioSelect').addEventListener('change', () => { store('radio', $('radioSelect').value); state.page = 1; closePanel(); loadData(); });
+            $('monthSelect').addEventListener('change', () => { store('month', $('monthSelect').value); state.page = 1; closePanel(); loadData(); });
+            $('sortSelect').addEventListener('change', () => { state.sort = $('sortSelect').value; store('sort', state.sort); state.page = 1; loadData(); });
+            $('sizeSelect').addEventListener('change', () => { state.size = +$('sizeSelect').value; state.page = 1; loadData(); });
+            $('statusFilter').addEventListener('click', e => { if (e.target.dataset.status) setStatus(e.target.dataset.status); });
+
+            let searchTimer;
+            $('searchInput').addEventListener('input', () => {
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(() => { state.q = $('searchInput').value.trim(); state.page = 1; loadData(); }, 250);
+            });
+
+            document.addEventListener('click', e => { if (!$('toolsMenu').contains(e.target)) $('toolsMenu').classList.remove('open'); });
+            document.addEventListener('keydown', onKey);
+        });
+
+        async function loadRadios() {
+            try {
+                const radios = await (await fetch('/api/radios')).json();
+                const opts = radios.map(r => `<option value="${esc(r.id)}">${esc(r.name)}</option>`).join('');
+                $('radioSelect').innerHTML = '<option value="all">Tutte le emittenti</option>' + opts;
+                $('uploadRadioSelect').innerHTML = opts;
+                $('scraperRadioSelect').innerHTML = opts;
+                const saved = recall('radio');
+                if (saved && [...$('radioSelect').options].some(o => o.value === saved)) $('radioSelect').value = saved;
+            } catch (err) { toast('Errore caricamento emittenti: ' + err, 'error'); }
+        }
+
+        async function loadMonths() {
+            try {
+                const res = await (await fetch('/api/months')).json();
+                const months = res.months || [];
+                $('monthSelect').innerHTML = months.map(m => {
+                    const [y, mm] = m.split('-');
+                    return `<option value="${m}">${MONTHS_IT[+mm - 1]} ${y}</option>`;
+                }).join('');
+                // Default: mese scorso (quello da rendicontare), se presente
+                const saved = recall('month');
+                const now = new Date();
+                const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                const prevKey = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
+                $('monthSelect').value = months.includes(saved) ? saved : (months.includes(prevKey) ? prevKey : months[0]);
+            } catch (err) { toast('Errore caricamento mesi: ' + err, 'error'); }
+        }
+
+        function params(extra = {}) {
+            const p = new URLSearchParams({ month: $('monthSelect').value, radio_id: $('radioSelect').value, ...extra });
+            return p.toString();
+        }
+
+        // --- DATI TABELLA ---
+        async function loadData({ refresh = false } = {}) {
+            const seq = ++requestSeq;
+            const tbody = $('tbody');
+            if (!state.songs.length) tbody.innerHTML = '<tr class="empty-row"><td colspan="11"><span class="spinner"></span> Caricamento…</td></tr>';
+            tbody.style.opacity = '0.55';
+            try {
+                const url = '/api/dashboard_data?' + params({
+                    q: state.q, status: state.status, sort: state.sort, page: state.page, size: state.size, refresh: refresh ? 1 : 0
+                });
+                const res = await (await fetch(url)).json();
+                if (seq !== requestSeq) return; // risposta superata da una richiesta più recente
+                if (!res.success) throw new Error(res.error);
+                state.songs = res.songs;
+                state.stats = res.stats;
+                state.page = res.page;
+                state.pages = res.pages;
+                state.filtered = res.filtered;
+                renderStats();
+                renderTable();
+                if (refresh) toast('Dati aggiornati', 'success');
+            } catch (err) {
+                if (seq !== requestSeq) return;
+                tbody.innerHTML = `<tr class="empty-row"><td colspan="11" style="color:var(--red)">Errore: ${esc(err.message || err)}</td></tr>`;
+            } finally {
+                if (seq === requestSeq) tbody.style.opacity = '1';
+            }
+        }
+
+        function renderStats() {
+            const s = state.stats;
+            const pct = (a, b) => b ? Math.round(a / b * 1000) / 10 : 0;
+            const cov = pct(s.plays_green, s.plays);
+            $('kpiCoverage').textContent = s.plays ? `${cov.toLocaleString('it-IT')}%` : '–';
+            $('kpiTotals').textContent = `${fmt(s.plays_green)} su ${fmt(s.plays)} passaggi · ${fmt(s.total)} brani unici`;
+            $('kpiGreen').textContent = fmt(s.green);
+            $('kpiYellow').textContent = fmt(s.yellow);
+            $('kpiRed').textContent = fmt(s.red);
+            $('barGreen').style.width = pct(s.green, s.total) + '%';
+            $('barYellow').style.width = pct(s.yellow, s.total) + '%';
+            $('barRed').style.width = pct(s.red, s.total) + '%';
+
+            const incomplete = s.yellow + s.red;
+            const w = $('exportWarning');
+            if (!s.total) { w.textContent = 'Nessun passaggio nel periodo selezionato'; w.className = 'export-warning'; }
+            else if (incomplete) { w.textContent = `⚠ ${fmt(incomplete)} brani incompleti (${fmt(s.plays - s.plays_green)} passaggi) usciranno senza alcuni codici`; w.className = 'export-warning'; }
+            else { w.textContent = '✓ Tutti i brani hanno i metadati completi'; w.className = 'export-warning ok'; }
+
+            const single = $('radioSelect').value !== 'all';
+            $('btnDetail').disabled = !single;
+            $('btnDetail').title = single ? '' : 'Seleziona una singola emittente';
+        }
+
+        function renderTable() {
+            const tbody = $('tbody');
+            if (!state.songs.length) {
+                const msg = state.q ? 'Nessun brano corrisponde alla ricerca.' :
+                    state.status === 'incomplete' ? '🎉 Nessun brano da completare per questo periodo.' : 'Nessun brano trovato.';
+                tbody.innerHTML = `<tr class="empty-row"><td colspan="11">${msg}</td></tr>`;
+            } else {
+                tbody.innerHTML = state.songs.map((s, i) => rowHtml(s, i)).join('');
+            }
+            const from = state.filtered ? (state.page - 1) * state.size + 1 : 0;
+            const to = Math.min(state.page * state.size, state.filtered);
+            $('pagerInfo').textContent = `${fmt(from)}–${fmt(to)} di ${fmt(state.filtered)} brani`;
+            $('pageLabel').textContent = `Pagina ${state.page} / ${state.pages}`;
+            $('prevPage').disabled = state.page <= 1;
+            $('nextPage').disabled = state.page >= state.pages;
+            highlightSelected();
+        }
+
+        function rowHtml(s, i) {
+            const cell = v => blank(v) ? '<span class="muted">–</span>' : esc(v);
+            const writers = [s.compositore, s.autore].filter(v => !blank(v));
+            const uniqueWriters = [...new Set(writers)].join(' / ');
+            return `<tr data-i="${i}" onclick="selectSong(${i})">
+                <td><span class="dot ${s.status}" title="${STATUS_LABEL[s.status]}"></span></td>
+                <td class="num">${fmt(s.passaggi)}</td>
+                <td class="artist ellipsis" title="${esc(s.artista_pulito)}">${esc(s.artista_pulito)}</td>
+                <td class="ellipsis" title="${esc(s.titolo_pulito)}">${esc(s.titolo_pulito)}</td>
+                <td class="mono">${cell(s.codice_siae)}</td>
+                <td class="mono">${cell(s.codice_iswc)}</td>
+                <td class="mono">${cell(s.codice_isrc)}</td>
+                <td class="ellipsis" title="${esc(uniqueWriters)}">${uniqueWriters ? esc(uniqueWriters) : '<span class="muted">–</span>'}</td>
+                <td class="ellipsis">${cell(s.casa_discografica)}</td>
+                <td>${cell(s.anno_pubblicazione)}</td>
+                <td style="white-space:nowrap">${missingChips(s)}</td>
+            </tr>`;
+        }
+
+        function missingChips(s) {
+            const missing = s.mancanti || [];
+            if (missing.length === 4) return '<span class="chip">Tutti i dati</span>';
+            return missing.map(m => `<span class="chip">${esc(m)}</span>`).join('');
+        }
+
+        function setStatus(status) {
+            state.status = status;
+            store('status', status);
+            state.page = 1;
+            syncStatusButtons();
+            loadData();
+        }
+
+        function syncStatusButtons() {
+            document.querySelectorAll('#statusFilter button').forEach(b => b.classList.toggle('active', b.dataset.status === state.status));
+            document.querySelectorAll('button.kpi').forEach(b => b.classList.toggle('active', b.dataset.status === state.status));
+        }
+
+        function changePage(delta) {
+            const next = state.page + delta;
+            if (next < 1 || next > state.pages) return;
+            state.page = next;
+            loadData().then(() => { document.querySelector('.table-wrap').scrollTop = 0; });
+        }
+
+        // --- PANNELLO LATERALE ---
+        function selectSong(i) {
+            const s = state.songs[i];
+            if (!s) return;
+            state.selected = i;
+            $('workspace').classList.add('panel-open');
+            $('pTitle').textContent = s.titolo_pulito;
+            $('pArtist').textContent = s.artista_pulito;
+            $('pPlays').textContent = `${fmt(s.passaggi)} passaggi nel periodo`;
+            renderPanelStatus(s);
+            FIELDS.forEach(f => {
+                const input = $('f_' + f);
+                input.value = blank(s[f]) ? '' : s[f];
+                input.classList.remove('suggested');
+                const sug = input.parentElement.querySelector('.suggest');
+                if (sug) sug.remove();
+                const lbl = input.parentElement.querySelector('label small');
+                if (lbl) lbl.remove();
+            });
+            $('siaeLink').href = 'https://www.google.com/search?' + new URLSearchParams({ q: `"${s.titolo_pulito}" ${s.artista_pulito} ISWC autori` });
+            highlightSelected();
+            const firstEmpty = FIELDS.map(f => $('f_' + f)).find(inp => !inp.value);
+            (firstEmpty || $('f_codice_siae')).focus({ preventScroll: true });
+        }
+
+        function renderPanelStatus(s) {
+            const chips = (s.mancanti || []).map(m => `<span class="chip">${esc(m)}</span>`).join('');
+            $('pStatus').innerHTML = `<span class="dot ${s.status}"></span> <strong>${STATUS_LABEL[s.status]}</strong> ${chips}`;
+        }
+
+        function highlightSelected() {
+            document.querySelectorAll('#tbody tr').forEach(tr => tr.classList.toggle('selected', +tr.dataset.i === state.selected && $('workspace').classList.contains('panel-open')));
+            const tr = document.querySelector(`#tbody tr[data-i="${state.selected}"]`);
+            if (tr && $('workspace').classList.contains('panel-open')) tr.scrollIntoView({ block: 'nearest' });
+        }
+
+        function closePanel() {
+            $('workspace').classList.remove('panel-open');
+            state.selected = -1;
+            highlightSelected();
+        }
+
+        async function moveSelection(delta) {
+            const next = state.selected + delta;
+            if (next >= 0 && next < state.songs.length) return selectSong(next);
+            if (delta > 0 && state.page < state.pages) {
+                state.page++;
+                await loadData();
+                selectSong(0);
+            } else if (delta < 0 && state.page > 1) {
+                state.page--;
+                await loadData();
+                selectSong(state.songs.length - 1);
+            }
+        }
+
+        async function saveSong(e, advance = true) {
+            if (e) e.preventDefault();
+            const s = state.songs[state.selected];
+            if (!s) return;
+            const payload = { artista_pulito: s.artista_pulito, titolo_pulito: s.titolo_pulito };
+            FIELDS.forEach(f => payload[f] = $('f_' + f).value.trim());
+            try {
+                const res = await (await fetch('/api/metadata/update', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+                })).json();
+                if (!res.success) throw new Error(res.error);
+
+                // Aggiorna riga e contatori senza ricaricare la tabella
+                const old = s.status;
+                Object.assign(s, res.song);
+                if (old !== s.status) {
+                    state.stats[old]--; state.stats[s.status]++;
+                    if (s.status === 'green') state.stats.plays_green += s.passaggi;
+                    if (old === 'green') state.stats.plays_green -= s.passaggi;
+                    renderStats();
+                }
+                const tr = document.querySelector(`#tbody tr[data-i="${state.selected}"]`);
+                if (tr) tr.outerHTML = rowHtml(s, state.selected);
+                renderPanelStatus(s);
+                toast(`Salvato: ${s.titolo_pulito}`, 'success');
+                if (advance) moveSelection(1); else highlightSelected();
+            } catch (err) {
+                toast('Errore salvataggio: ' + (err.message || err), 'error');
+            }
+        }
+
+        async function lookupOnline() {
+            const s = state.songs[state.selected];
+            if (!s) return;
+            const btn = $('lookupBtn');
+            const idx = state.selected;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Ricerca in corso…';
+            try {
+                const res = await (await fetch('/api/song/lookup', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ artista_pulito: s.artista_pulito, titolo_pulito: s.titolo_pulito })
+                })).json();
+                if (!res.success) throw new Error(res.error);
+                if (state.selected !== idx) return; // l'utente è passato a un altro brano
+                let filled = 0, proposed = 0;
+                Object.entries(res.found).forEach(([field, { value, source }]) => {
+                    const input = $('f_' + field);
+                    if (!input) return;
+                    if (!input.value) {
+                        input.value = value;
+                        input.classList.add('suggested');
+                        input.parentElement.querySelector('label').insertAdjacentHTML('beforeend', `<small>da ${esc(source)}</small>`);
+                        filled++;
+                    } else if (input.value.trim().toLowerCase() !== value.toLowerCase()) {
+                        const b = document.createElement('button');
+                        b.type = 'button';
+                        b.className = 'suggest';
+                        b.innerHTML = `Usa <strong>${esc(value)}</strong> <span class="muted">(${esc(source)})</span>`;
+                        b.onclick = () => { input.value = value; input.classList.add('suggested'); b.remove(); };
+                        input.parentElement.appendChild(b);
+                        proposed++;
+                    }
+                });
+                toast(filled || proposed
+                    ? `Trovati ${filled} campi nuovi${proposed ? ` e ${proposed} alternative` : ''}: controlla e salva.`
+                    : 'Nessun dato nuovo trovato online.', filled || proposed ? 'success' : 'warning');
+            } catch (err) {
+                toast('Errore ricerca online: ' + (err.message || err), 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🔎 Cerca dati online';
+            }
+        }
+
+        function onKey(e) {
+            const tag = (e.target.tagName || '').toLowerCase();
+            if (e.key === 'Escape') {
+                if (document.querySelector('.modal-overlay.active')) document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+                else closePanel();
+                return;
+            }
+            if (e.altKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+                e.preventDefault();
+                if (state.selected < 0 && state.songs.length) return selectSong(0);
+                moveSelection(e.key === 'ArrowDown' ? 1 : -1);
+                return;
+            }
+            if (e.key === '/' && tag !== 'input' && tag !== 'select') {
+                e.preventDefault();
+                $('searchInput').focus();
+            }
+        }
+
+        // --- STAMPA ED EXPORT ---
+        function openBordereau(mode) {
+            window.open('bordero.html?' + params({ mode }), '_blank');
+        }
+
+        function downloadReport(type) {
+            toast(`Generazione report ${type.toUpperCase()}…`, 'info');
+            const a = document.createElement('a');
+            a.href = `/api/export/${type}?` + params();
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        }
+
+        // --- STRUMENTI ---
+        function toggleMenu(e) { e.stopPropagation(); $('toolsMenu').classList.toggle('open'); }
+        function openModal(id) { $('toolsMenu').classList.remove('open'); $(id).classList.add('active'); }
+        function closeModal(id) { $(id).classList.remove('active'); }
+
+        function uploadLogFile() {
+            const fileInput = $('logFileInput');
+            if (!fileInput.files.length) return toast('Seleziona prima un file di log.', 'warning');
+            const reader = new FileReader();
+            reader.onload = async ev => {
+                try {
+                    const res = await (await fetch('/api/import_log', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ radio_id: $('uploadRadioSelect').value, file_content: ev.target.result })
+                    })).json();
+                    if (!res.success) throw new Error(res.error);
+                    toast(`Log importato: ${fmt(res.count)} passaggi inseriti.`, 'success');
+                    closeModal('uploadModal');
+                    fileInput.value = '';
+                    await loadMonths();
+                    loadData({ refresh: true });
+                } catch (err) { toast('Errore importazione: ' + (err.message || err), 'error'); }
+            };
+            reader.readAsText(fileInput.files[0], 'UTF-8');
+        }
+
+        async function runScraperRetro() {
+            const date = $('scraperDateInput').value;
+            if (!date) return toast('Indica la data.', 'warning');
+            closeModal('scraperModal');
+            toast('Scraper avviato, attendi…', 'info');
+            try {
+                const res = await (await fetch('/api/scrape_retro', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ radio_id: $('scraperRadioSelect').value, date })
+                })).json();
+                if (!res.success) throw new Error(res.message || res.error);
+                toast(res.message, 'success');
+                loadData({ refresh: true });
+            } catch (err) { toast('Scraper fallito: ' + (err.message || err), 'error'); }
+        }
+
+        let enrichTimer = null;
+        async function checkEnrichmentStatus() {
+            try {
+                const d = await (await fetch('/api/enrichment/status')).json();
+                const card = $('enrichCard');
+                if (d.status === 'running') {
+                    card.classList.add('show');
+                    const pct = d.total ? Math.round(d.processed / d.total * 100) : 0;
+                    $('enrichText').textContent = `${fmt(d.processed)} / ${fmt(d.total)} (${pct}%) · ${fmt(d.success)} brani arricchiti · ${Math.round(d.elapsed)}s`;
+                    $('enrichBar').style.width = pct + '%';
+                    if (!enrichTimer) enrichTimer = setInterval(checkEnrichmentStatus, 2000);
+                } else {
+                    if (card.classList.contains('show')) {
+                        card.classList.remove('show');
+                        toast('Arricchimento completato.', 'success');
+                        loadData({ refresh: true });
+                    }
+                    clearInterval(enrichTimer);
+                    enrichTimer = null;
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        async function triggerEnrichment() {
+            $('toolsMenu').classList.remove('open');
+            const limitStr = prompt('Quanti brani incompleti vuoi arricchire? (i più trasmessi per primi)', '1000');
+            if (limitStr === null) return;
+            try {
+                const res = await (await fetch('/api/run_enrichment', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ limit: parseInt(limitStr) || 1000 })
+                })).json();
+                if (!res.success) throw new Error(res.error);
+                toast(res.message, 'success');
+                setTimeout(checkEnrichmentStatus, 500);
+            } catch (err) { toast('Impossibile avviare: ' + (err.message || err), 'error'); }
+        }
+
+        async function triggerSheetsSync() {
+            $('toolsMenu').classList.remove('open');
+            if (!confirm('La sincronizzazione completa scarica il foglio Google e sovrascrive i valori locali diversi, poi ricarica tutto il foglio. Continuare?')) return;
+            try {
+                const res = await (await fetch('/api/sheets/sync', { method: 'POST' })).json();
+                if (!res.success) throw new Error(res.error);
+                toast(res.message, 'success');
+            } catch (err) { toast('Sincronizzazione fallita: ' + (err.message || err), 'error'); }
+        }
+
+        function toast(message, type = 'info') {
+            const el = document.createElement('div');
+            el.className = `toast ${type}`;
+            el.textContent = message;
+            $('toasts').appendChild(el);
+            setTimeout(() => el.remove(), type === 'error' ? 8000 : 4000);
+        }
+    </script>
+</body>
+</html>

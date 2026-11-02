@@ -50,6 +50,8 @@ def init_db():
     # Indici per velocizzare le query
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_passaggi_radio_data ON passaggi(id_radio, data)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_passaggi_clean ON passaggi(artista_pulito, titolo_pulito)')
+    # Indice coprente per le query mensili (dashboard ed export): evita la scansione completa
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_passaggi_data ON passaggi(data, artista_pulito, titolo_pulito)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_metadati_clean ON canzoni_metadati(artista_pulito, titolo_pulito)')
     
     conn.commit()
@@ -97,18 +99,43 @@ def insert_passage(id_radio, data_str, time_str, artist, title, source, duration
     conn.commit()
     conn.close()
 
+def month_range(year_month):
+    """
+    Converte 'YYYY-MM' nell'intervallo [primo giorno, primo giorno del mese successivo).
+    Un confronto per intervallo usa l'indice sulla data, a differenza di LIKE 'YYYY-MM%'.
+    """
+    year, month = (int(x) for x in year_month.split('-')[:2])
+    next_year, next_month = (year + 1, 1) if month == 12 else (year, month + 1)
+    return f"{year:04d}-{month:02d}-01", f"{next_year:04d}-{next_month:02d}-01"
+
+def get_available_months():
+    """Ritorna i mesi (YYYY-MM) dal più recente al più vecchio, tra il primo e l'ultimo passaggio registrato."""
+    conn = get_db_connection()
+    row = conn.execute("SELECT MIN(data), MAX(data) FROM passaggi").fetchone()
+    conn.close()
+    if not row or not row[0]:
+        return []
+    y, m = int(row[0][:4]), int(row[0][5:7])
+    end_y, end_m = int(row[1][:4]), int(row[1][5:7])
+    months = []
+    while (y, m) <= (end_y, end_m):
+        months.append(f"{y:04d}-{m:02d}")
+        y, m = (y + 1, 1) if m == 12 else (y, m + 1)
+    return months[::-1]
+
 def get_monthly_unique_songs(year_month, id_radio=None):
     """
     Ritorna la lista delle canzoni uniche trasmesse in un dato mese (formato YYYY-MM)
-    con i rispettivi metadati.
+    con i rispettivi metadati e il numero di passaggi.
     """
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
     query = '''
-    SELECT DISTINCT 
-        p.artista_pulito, 
+    SELECT
+        p.artista_pulito,
         p.titolo_pulito,
+        COUNT(*) as passaggi,
         m.id as metadati_id,
         m.codice_siae,
         m.codice_iswc,
@@ -119,15 +146,15 @@ def get_monthly_unique_songs(year_month, id_radio=None):
         m.anno_pubblicazione
     FROM passaggi p
     LEFT JOIN canzoni_metadati m ON p.artista_pulito = m.artista_pulito AND p.titolo_pulito = m.titolo_pulito
-    WHERE p.data LIKE ?
+    WHERE p.data >= ? AND p.data < ?
     '''
-    params = [f"{year_month}%"]
-    
+    params = list(month_range(year_month))
+
     if id_radio:
         query += " AND p.id_radio = ?"
         params.append(id_radio)
-        
-    query += " ORDER BY p.artista_pulito, p.titolo_pulito"
+
+    query += " GROUP BY p.artista_pulito, p.titolo_pulito ORDER BY p.artista_pulito, p.titolo_pulito"
     
     cursor.execute(query, params)
     rows = cursor.fetchall()
