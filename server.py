@@ -1076,6 +1076,18 @@ if __name__ == "__main__":
         init_db()  # crea tabelle e indici mancanti (il primo avvio può richiedere qualche secondo)
     except Exception as e:
         print(f"Errore inizializzazione database: {e}")
+    # L'arricchimento gira dentro questo processo: uno stato "running" rimasto nel file
+    # all'avvio è di un'esecuzione interrotta, e terrebbe la barra di avanzamento sempre visibile
+    progress_file = os.path.join(DIRECTORY, 'scratch', 'enrichment_progress.json')
+    try:
+        with open(progress_file, 'r', encoding='utf-8') as f:
+            progress = json.load(f)
+        if progress.get("status") == "running":
+            progress["status"] = "interrupted"
+            with open(progress_file, 'w', encoding='utf-8') as f:
+                json.dump(progress, f, indent=2)
+    except Exception:
+        pass
     try:
         with ThreadingServer(("", PORT), MyHandler) as httpd:
             print(f"\n========================================================")
