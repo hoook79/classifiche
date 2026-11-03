@@ -1,14 +1,83 @@
 #!/usr/bin/env python3
 import os
+import re
 import sqlite3
+import unicodedata
 from data_cleaner import clean_song
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'radio_reports.db')
 
+METADATA_COLUMNS = ["codice_siae", "codice_iswc", "codice_isrc", "compositore", "autore", "casa_discografica", "anno_pubblicazione"]
+EMPTY_VALUES = ('', '-', 'N/A', 'N/D')
+
 def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
     return conn
+
+def song_key(artist, title):
+    """
+    Chiave che identifica lo stesso brano scritto in modi diversi:
+    ignora maiuscole, accenti e punteggiatura ("Amica (con Madame)" == "AMICA (CON MADAME)").
+    Volutamente prudente: versioni o remix con parole diverse restano brani distinti.
+    """
+    def norm(s):
+        s = unicodedata.normalize('NFKD', s or '').encode('ascii', 'ignore').decode().lower()
+        return re.sub(r'[^a-z0-9]+', ' ', s).strip()
+    return f"{norm(artist)}|{norm(title)}"
+
+def _is_filled(value):
+    return bool(value) and str(value).strip() not in EMPTY_VALUES
+
+def _merge_group(cursor, key):
+    """Allinea i metadati di tutte le varianti di un brano: vince la riga più completa, i buchi si riempiono dalle altre."""
+    rows = cursor.execute(
+        f"SELECT id, {', '.join(METADATA_COLUMNS)} FROM canzoni_metadati WHERE chiave = ?", (key,)
+    ).fetchall()
+    if len(rows) < 2:
+        return False
+    ranked = sorted(rows, key=lambda r: -sum(_is_filled(r[c]) for c in METADATA_COLUMNS))
+    merged = {}
+    for col in METADATA_COLUMNS:
+        merged[col] = next((r[col].strip() for r in ranked if _is_filled(r[col])), '')
+    if all(all((r[c] or '').strip() == merged[c] for c in METADATA_COLUMNS) for r in rows):
+        return False
+    cursor.execute(
+        f"UPDATE canzoni_metadati SET {', '.join(c + ' = ?' for c in METADATA_COLUMNS)} WHERE chiave = ?",
+        [merged[c] for c in METADATA_COLUMNS] + [key]
+    )
+    return True
+
+def ensure_song_keys(merge_all=False):
+    """
+    Calcola la chiave per le righe di canzoni_metadati che non l'hanno ancora
+    (inserite da qualunque script) e allinea i metadati delle varianti dello stesso brano.
+    Con merge_all=True riallinea tutti i gruppi (es. dopo una sincronizzazione da Google Sheets).
+    Ritorna il numero di gruppi allineati.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    columns = [r["name"] for r in cursor.execute("PRAGMA table_info(canzoni_metadati)")]
+    if "chiave" not in columns:
+        cursor.execute("ALTER TABLE canzoni_metadati ADD COLUMN chiave TEXT")
+    if "ultimo_tentativo" not in columns:
+        # Data dell'ultima ricerca automatica: evita di ripetere a vuoto le stesse ricerche
+        cursor.execute("ALTER TABLE canzoni_metadati ADD COLUMN ultimo_tentativo TEXT")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_metadati_chiave ON canzoni_metadati(chiave)")
+
+    pending = cursor.execute("SELECT id, artista_pulito, titolo_pulito FROM canzoni_metadati WHERE chiave IS NULL").fetchall()
+    touched = set()
+    for r in pending:
+        key = song_key(r["artista_pulito"], r["titolo_pulito"])
+        cursor.execute("UPDATE canzoni_metadati SET chiave = ? WHERE id = ?", (key, r["id"]))
+        touched.add(key)
+
+    if merge_all:
+        touched = {r[0] for r in cursor.execute("SELECT chiave FROM canzoni_metadati GROUP BY chiave HAVING COUNT(*) > 1")}
+    merged = sum(1 for key in touched if _merge_group(cursor, key))
+    conn.commit()
+    conn.close()
+    return merged
 
 def init_db():
     conn = get_db_connection()
@@ -56,7 +125,8 @@ def init_db():
     
     conn.commit()
     conn.close()
-    print("Database SQLite inizializzato correttamente.")
+    merged = ensure_song_keys()
+    print(f"Database SQLite inizializzato correttamente ({merged} brani doppi allineati).")
 
 def insert_passage(id_radio, data_str, time_str, artist, title, source, duration=240):
     """
@@ -137,6 +207,7 @@ def get_monthly_unique_songs(year_month, id_radio=None):
         p.titolo_pulito,
         COUNT(*) as passaggi,
         m.id as metadati_id,
+        m.chiave,
         m.codice_siae,
         m.codice_iswc,
         m.codice_isrc,
@@ -179,6 +250,18 @@ def update_metadata(artist_clean, title_clean, siae, iswc, isrc, compositore, au
         casa_discografica = excluded.casa_discografica,
         anno_pubblicazione = excluded.anno_pubblicazione
     ''', (artist_clean, title_clean, siae, iswc, isrc, compositore, autore, label, year))
+
+    # Stessi valori su tutte le varianti dello stesso brano (maiuscole/accenti/punteggiatura diversi)
+    key = song_key(artist_clean, title_clean)
+    try:
+        cursor.execute("UPDATE canzoni_metadati SET chiave = ? WHERE artista_pulito = ? AND titolo_pulito = ?", (key, artist_clean, title_clean))
+        cursor.execute('''
+        UPDATE canzoni_metadati SET codice_siae = ?, codice_iswc = ?, codice_isrc = ?, compositore = ?, autore = ?,
+            casa_discografica = ?, anno_pubblicazione = ?
+        WHERE chiave = ?
+        ''', (siae, iswc, isrc, compositore, autore, label, year, key))
+    except sqlite3.OperationalError:
+        pass  # colonna chiave non ancora creata: verrà allineato da ensure_song_keys()
     conn.commit()
     conn.close()
 

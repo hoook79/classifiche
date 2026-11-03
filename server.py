@@ -35,7 +35,7 @@ def sanitize_for_siae(text):
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(DIRECTORY)
 
-from db_manager import get_db_connection, update_metadata, get_monthly_unique_songs, insert_passage, month_range, get_available_months, init_db
+from db_manager import get_db_connection, update_metadata, get_monthly_unique_songs, insert_passage, month_range, get_available_months, init_db, ensure_song_keys, song_key
 from log_parser import parse_log_file
 from scraper_retro import scrape_retro
 from data_cleaner import clean_song
@@ -218,11 +218,28 @@ def get_songs_cached(month, radio_id, refresh=False):
         if entry and not refresh and now - entry[0] < CACHE_TTL:
             return entry[1]
 
-    songs = []
+    ensure_song_keys()  # chiave per le righe aggiunte nel frattempo dagli altri script
+
+    # Le varianti dello stesso brano (maiuscole/accenti diversi) diventano una riga sola:
+    # passaggi sommati, nome mostrato = variante più trasmessa
+    groups = {}
     for row in get_monthly_unique_songs(month, radio_id):
-        song = {"artista_pulito": row["artista_pulito"], "titolo_pulito": row["titolo_pulito"], "passaggi": row["passaggi"]}
+        key = row["chiave"] or song_key(row["artista_pulito"], row["titolo_pulito"])
+        groups.setdefault(key, []).append(row)
+
+    songs = []
+    for key, rows in groups.items():
+        main = max(rows, key=lambda r: r["passaggi"])
+        richest = max(rows, key=lambda r: sum(not is_empty(r[f]) for f in METADATA_FIELDS))
+        song = {
+            "chiave": key,
+            "artista_pulito": main["artista_pulito"],
+            "titolo_pulito": main["titolo_pulito"],
+            "passaggi": sum(r["passaggi"] for r in rows),
+            "varianti": len(rows)
+        }
         for field in METADATA_FIELDS:
-            song[field] = row[field] or ""
+            song[field] = richest[field] or ""
         songs.append(apply_song_status(song))
 
     with _songs_cache_lock:
@@ -236,11 +253,12 @@ def invalidate_songs_cache():
         _songs_cache.clear()
 
 def update_cached_song(artist_clean, title_clean, values):
-    """Aggiorna il brano in tutte le liste in cache, senza rieseguire le query."""
+    """Aggiorna il brano (tutte le sue varianti) in tutte le liste in cache, senza rieseguire le query."""
+    key = song_key(artist_clean, title_clean)
     with _songs_cache_lock:
         for _, songs in _songs_cache.values():
             for song in songs:
-                if song["artista_pulito"] == artist_clean and song["titolo_pulito"] == title_clean:
+                if song["chiave"] == key:
                     song.update(values)
                     apply_song_status(song)
 
@@ -299,13 +317,14 @@ def _flush_sheets_queue():
 
 _spotify_token = {"value": None, "expires": 0.0}
 
-def lookup_song_online(artist, title):
+def lookup_song_online(artist, title, isrc=None):
     """
     Cerca i metadati di un singolo brano interrogando in parallelo Spotify, Deezer, iTunes e MusicBrainz.
     Non salva nulla: ritorna i valori trovati con la fonte, da confermare nel pannello.
     """
     from enrichment_worker import load_config, get_spotify_token, search_spotify, search_deezer, search_itunes
     from bulk_enrichment import rate_limited_search_musicbrainz
+    from metadata_sources import search_discogs_writers, find_iswc_wikidata, normalize_iswc
 
     if time.time() > _spotify_token["expires"]:
         config = load_config()
@@ -322,15 +341,17 @@ def lookup_song_online(artist, title):
             print(f"[LOOKUP] Errore {fn.__name__} per '{artist} - {title}': {e}")
             return (None,) * size
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as ex:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as ex:
         f_spotify = ex.submit(safe, search_spotify, artist, title, token) if token else None
         f_deezer = ex.submit(safe, search_deezer, artist, title)
         f_itunes = ex.submit(safe, search_itunes, artist, title, size=2)
-        f_mb = ex.submit(safe, rate_limited_search_musicbrainz, artist, title)
+        f_mb = ex.submit(safe, rate_limited_search_musicbrainz, artist, title, isrc)
+        f_dc = ex.submit(safe, search_discogs_writers, artist, title, size=2)
         sp = f_spotify.result() if f_spotify else (None, None, None)
         dz = f_deezer.result()
         it = f_itunes.result()
         mb = f_mb.result()
+        dc = f_dc.result()
 
     found = {}
     def pick(field, candidates):
@@ -342,12 +363,16 @@ def lookup_song_online(artist, title):
     pick("codice_isrc", [(sp[0], "Spotify"), (dz[0], "Deezer")])
     pick("anno_pubblicazione", [(sp[1], "Spotify"), (dz[1], "Deezer"), (it[0], "iTunes")])
     pick("casa_discografica", [(sp[2], "Spotify"), (dz[2], "Deezer"), (it[1], "iTunes")])
-    pick("codice_iswc", [(mb[0], "MusicBrainz")])
-    pick("compositore", [(mb[1], "MusicBrainz")])
-    pick("autore", [(mb[2], "MusicBrainz")])
+    pick("compositore", [(mb[1], "MusicBrainz"), (dc[0], "Discogs")])
+    pick("autore", [(mb[2], "MusicBrainz"), (dc[1], "Discogs")])
+    composers = found.get("compositore", {}).get("value", "")
+    authors = found.get("autore", {}).get("value", "")
+    pick("codice_iswc", [(normalize_iswc(mb[0]), "MusicBrainz"),
+                         (find_iswc_wikidata(artist, title, composers, authors), "Wikidata")])
     return found
 
 def get_bordereau_rows(month, radio_id, mode):
+    ensure_song_keys()
     conn = get_db_connection()
     params = list(month_range(month))
     radio_filter = ""
@@ -371,7 +396,7 @@ def get_bordereau_rows(month, radio_id, mode):
         FROM passaggi p
         LEFT JOIN canzoni_metadati m ON p.artista_pulito = m.artista_pulito AND p.titolo_pulito = m.titolo_pulito
         WHERE p.data >= ? AND p.data < ?{radio_filter}
-        GROUP BY p.artista_pulito, p.titolo_pulito
+        GROUP BY COALESCE(m.chiave, p.artista_pulito || '|' || p.titolo_pulito)
         ORDER BY p.titolo_pulito, p.artista_pulito
         """
     rows = [dict(r) for r in conn.execute(sql, params).fetchall()]
@@ -531,13 +556,14 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_response(400)
                 self.end_headers()
                 return
-                
+
             try:
+                ensure_song_keys()
                 conn = get_db_connection()
                 cursor = conn.cursor()
                 sql = '''
-                SELECT 
-                    p.artista_pulito, 
+                SELECT
+                    p.artista_pulito,
                     p.titolo_pulito, 
                     COUNT(*) as passaggi, 
                     SUM(p.durata) as secondi,
@@ -552,7 +578,7 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
                 if radio_id:
                     sql += " AND p.id_radio = ?"
                     params.append(radio_id)
-                sql += " GROUP BY p.artista_pulito, p.titolo_pulito ORDER BY passaggi DESC"
+                sql += " GROUP BY COALESCE(m.chiave, p.artista_pulito || '|' || p.titolo_pulito) ORDER BY passaggi DESC"
                 
                 cursor.execute(sql, params)
                 rows = cursor.fetchall()
@@ -945,7 +971,7 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
                 title_clean = data.get('titolo_pulito')
                 if not artist_clean or not title_clean:
                     raise ValueError("Dati artista_pulito e titolo_pulito obbligatori")
-                self.send_json({"success": True, "found": lookup_song_online(artist_clean, title_clean)})
+                self.send_json({"success": True, "found": lookup_song_online(artist_clean, title_clean, data.get('codice_isrc'))})
             except Exception as e:
                 self.send_json({"success": False, "error": str(e)}, 400)
             return

@@ -12,8 +12,9 @@ import threading
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(DIRECTORY)
 
-from db_manager import get_db_connection, update_metadata
+from db_manager import get_db_connection, update_metadata, ensure_song_keys
 from enrichment_worker import load_config, get_spotify_token, search_spotify, search_deezer, search_itunes, search_musicbrainz
+from metadata_sources import search_discogs_writers, find_iswc_wikidata, normalize_iswc, refresh_wikidata_iswc, apply_wikidata_iswc
 
 PROGRESS_FILE = os.path.join(DIRECTORY, 'scratch', 'enrichment_progress.json')
 
@@ -48,7 +49,7 @@ def update_progress_processed(is_success=False):
         progress_state["elapsed"] = round(time.time() - progress_state["started_at"], 2)
     save_progress()
 
-def rate_limited_search_musicbrainz(artist, title):
+def rate_limited_search_musicbrainz(artist, title, isrc=None):
     """
     Esegue la ricerca su MusicBrainz rispettando il rate limit globale di 1 req/sec.
     """
@@ -61,7 +62,7 @@ def rate_limited_search_musicbrainz(artist, title):
         if wait_time > 0:
             time.sleep(wait_time)
         last_musicbrainz_call_time = time.time()
-        return search_musicbrainz(artist, title)
+        return search_musicbrainz(artist, title, isrc)
 
 def process_single_song(song, spotify_token):
     """
@@ -109,23 +110,45 @@ def process_single_song(song, spotify_token):
         # 4. Ricerca MusicBrainz (per ISWC e Autori, solo se mancano e rispettando il rate limit)
         iswc, composers, authors = None, None, None
         needs_mb = (not current_iswc or current_iswc.strip() in ['', '-', 'N/A']) or \
-                   (not current_composer or current_composer.strip() in ['', '-', 'N/A'])
+                   ((not current_composer or current_composer.strip() in ['', '-', 'N/A']) and
+                    (not current_author or current_author.strip() in ['', '-', 'N/A']))
                    
         if needs_mb:
             try:
-                iswc, composers, authors = rate_limited_search_musicbrainz(artist, title)
+                # L'ISRC (già noto o appena trovato) identifica la registrazione esatta su MusicBrainz
+                isrc_for_mb = current_isrc if current_isrc.strip() not in ['', '-', 'N/A', 'N/D'] else isrc
+                iswc, composers, authors = rate_limited_search_musicbrainz(artist, title, isrc_for_mb)
             except Exception as e:
                 print(f"[THREAD-MUSICBRAINZ] Errore per '{artist} - {title}': {e}")
-                
-        # Unione dati intelligente e sicura contro i tipi non stringa
+
+        def blank(value):
+            return value is None or str(value).strip() in ['', '-', 'N/A', 'N/D']
+
+        # 5. Discogs per gli autori, se né il DB né MusicBrainz li hanno
+        if all(blank(v) for v in (composers, authors, current_composer, current_author)):
+            try:
+                d_composers, d_authors = search_discogs_writers(artist, title)
+                composers = composers or d_composers
+                authors = authors or d_authors
+            except Exception as e:
+                print(f"[THREAD-DISCOGS] Errore per '{artist} - {title}': {e}")
+
+        # 6. ISWC da Wikidata (elenco locale), confermato da interprete o autori
+        if blank(current_iswc) and blank(iswc):
+            iswc = find_iswc_wikidata(artist, title, composers or current_composer, authors or current_author)
+        # Scarta ISWC con cifra di controllo errata, da qualunque fonte
+        iswc = normalize_iswc(iswc) if not blank(iswc) else None
+
+        # Unione dati: i valori già presenti (anche corretti a mano) non vengono mai sovrascritti,
+        # le fonti automatiche riempiono solo i campi vuoti
         def clean_val(new_val, old_val):
             n_str = str(new_val).strip() if new_val is not None else ""
             o_str = str(old_val).strip() if old_val is not None else ""
-            
-            if n_str and n_str not in ['', '-', 'N/A', 'N/D']:
-                return n_str
+
             if o_str and o_str not in ['', '-', 'N/A', 'N/D']:
                 return o_str
+            if n_str and n_str not in ['', '-', 'N/A', 'N/D']:
+                return n_str
             return ""
             
         new_isrc = clean_val(isrc, current_isrc)
@@ -157,6 +180,16 @@ def process_single_song(song, spotify_token):
             except Exception as e:
                 print(f"[DB ERROR] Errore aggiornamento canzone '{artist} - {title}': {e}")
                 
+        # Ricorda il tentativo su tutte le varianti, per non ripetere a vuoto la stessa ricerca
+        with db_lock:
+            try:
+                conn = get_db_connection()
+                conn.execute("UPDATE canzoni_metadati SET ultimo_tentativo = date('now') WHERE chiave = ?", (song["chiave"],))
+                conn.commit()
+                conn.close()
+            except Exception as e:
+                print(f"[DB ERROR] Impossibile registrare il tentativo per '{artist} - {title}': {e}")
+
         # Logga il completamento
         status_str = "SUCCESSO" if has_new_info else "NESSUN NUOVO DATO"
         print(f"[ELABORATO] '{artist} - {title}' -> {status_str} (ISRC: {new_isrc or '-'}, ISWC: {new_iswc or '-'}, Anno: {new_year or '-'}, Label: {new_label or '-'})")
@@ -192,11 +225,26 @@ def run_bulk_enrichment(limit=500, max_threads=10):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    query = '''
+    # Un brano per gruppo di varianti; prima i più trasmessi negli ultimi 4 mesi.
+    # I brani cercati negli ultimi 30 giorni senza esito vengono saltati.
+    ensure_song_keys()
+
+    # Wikidata: elenco ISWC aggiornato in locale e applicato subito a tutti i brani (nessuna ricerca per brano)
+    try:
+        refresh_wikidata_iswc()
+        print(f"[WIKIDATA] ISWC assegnati da Wikidata: {apply_wikidata_iswc()} brani.")
+    except Exception as e:
+        print(f"[WIKIDATA] Passaggio saltato: {e}")
+    empty = "('', '-', 'N/A', 'N/D')"
+    def missing(col):
+        return f"(m.{col} IS NULL OR TRIM(m.{col}) IN {empty})"
+    query = f"""
     SELECT 
         p.artista_pulito, 
         p.titolo_pulito, 
+        m.chiave,
         COUNT(p.id) as play_count,
+        SUM(p.data >= date('now', '-120 day')) as recent_plays,
         m.codice_siae,
         m.codice_iswc,
         m.codice_isrc,
@@ -206,13 +254,12 @@ def run_bulk_enrichment(limit=500, max_threads=10):
         m.anno_pubblicazione
     FROM passaggi p
     JOIN canzoni_metadati m ON p.artista_pulito = m.artista_pulito AND p.titolo_pulito = m.titolo_pulito
-    WHERE (m.codice_iswc IS NULL OR m.codice_iswc = '' OR m.codice_iswc = '-')
-       OR (m.codice_isrc IS NULL OR m.codice_isrc = '' OR m.codice_isrc = '-')
-       OR (m.compositore IS NULL OR m.compositore = '' OR m.compositore = '-')
-    GROUP BY p.artista_pulito, p.titolo_pulito
-    ORDER BY play_count DESC
+    WHERE ({missing('codice_iswc')} OR {missing('codice_isrc')} OR ({missing('compositore')} AND {missing('autore')}))
+      AND (m.ultimo_tentativo IS NULL OR m.ultimo_tentativo < date('now', '-30 day'))
+    GROUP BY m.chiave
+    ORDER BY recent_plays DESC, play_count DESC
     LIMIT ?
-    '''
+    """
     
     cursor.execute(query, (limit,))
     songs = [dict(row) for row in cursor.fetchall()]

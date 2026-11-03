@@ -296,6 +296,12 @@ def sync_metadata():
                 conn.commit()
                 print(f"  [OK] Applicati {online_count} aggiornamenti da Google Sheets al DB locale.")
                 
+        # I valori scaricati possono differire tra varianti dello stesso brano: riallineale
+        from db_manager import ensure_song_keys
+        merged = ensure_song_keys(merge_all=True)
+        if merged:
+            print(f"  [OK] Allineati {merged} brani presenti in più varianti.")
+
         # --- STEP 2: CARICA TUTTI I DATI DA DB LOCALE A GOOGLE SHEETS ---
         cursor.execute("SELECT artista_pulito, titolo_pulito, codice_siae, codice_iswc, codice_isrc, compositore, autore, casa_discografica, anno_pubblicazione FROM canzoni_metadati ORDER BY artista_pulito, titolo_pulito")
         all_local = cursor.fetchall()

@@ -4,6 +4,7 @@ import sys
 import json
 import time
 import re
+import difflib
 import urllib.parse
 import requests
 import threading
@@ -279,95 +280,98 @@ def search_itunes(artist, title):
     return None, None
 
 
-def search_musicbrainz(artist, title):
+MB_HEADERS = {"User-Agent": "BroadcasterReportsApp/1.0.0 ( contact@broadcaster-reports.it )"}
+
+def _mb_get(url):
+    """GET su MusicBrainz rispettando il limite di 1 richiesta al secondo."""
+    time.sleep(1.1)
+    r = requests.get(url, headers=MB_HEADERS, timeout=10)
+    if r.status_code != 200:
+        return None
+    return r.json()
+
+def _norm_title(text):
+    # Ignora le parti tra parentesi (feat., versioni) e la punteggiatura
+    text = re.sub(r'[\(\[].*?[\)\]]', ' ', (text or '').lower())
+    text = re.sub(r'\b(feat|ft)\b.*$', ' ', text)
+    return " ".join(re.findall(r'\w+', text))
+
+def is_same_recording(artist_query, title_query, artist_result, title_result):
+    """Verifica stretta: titolo quasi identico e almeno un nome di artista in comune."""
+    t_q, t_r = _norm_title(title_query), _norm_title(title_result)
+    if not t_q or not t_r:
+        return False
+    if difflib.SequenceMatcher(None, t_q, t_r).ratio() < 0.85:
+        return False
+    a_q = {w for w in re.findall(r'\w+', (artist_query or '').lower()) if len(w) >= 3}
+    a_r = set(re.findall(r'\w+', (artist_result or '').lower()))
+    return not a_q or bool(a_q & a_r)
+
+def _work_credits(work_id):
+    """Ritorna (iswc, compositori, autori) di un'opera MusicBrainz."""
+    work = _mb_get(f"https://musicbrainz.org/ws/2/work/{work_id}?inc=artist-rels&fmt=json")
+    if not work:
+        return None, [], []
+    composers, lyricists = [], []
+    for rel in work.get("relations", []):
+        if rel.get("target-type") != "artist":
+            continue
+        name = rel.get("artist", {}).get("name")
+        rel_type = rel.get("type")
+        if rel_type in ("composer", "writer") and name not in composers:
+            composers.append(name)
+        if rel_type in ("lyricist", "writer") and name not in lyricists:
+            lyricists.append(name)
+    iswcs = work.get("iswcs") or []
+    return (iswcs[0] if iswcs else None), composers, lyricists
+
+def _credits_from_recording(recording):
+    """Segue i collegamenti registrazione -> opera e ne legge ISWC e autori."""
+    for rel in recording.get("relations", []):
+        if rel.get("target-type") == "work" and rel.get("work", {}).get("id"):
+            iswc, composers, lyricists = _work_credits(rel["work"]["id"])
+            if iswc or composers or lyricists:
+                return iswc, composers, lyricists
+    return None, [], []
+
+def _as_result(iswc, composers, lyricists):
+    return iswc, (", ".join(composers) if composers else None), (", ".join(lyricists) if lyricists else None)
+
+def search_musicbrainz(artist, title, isrc=None):
     """
-    Cerca il brano su MusicBrainz. Ritorna (iswc, compositori, autori).
-    Rispettare il limite di 1 req/sec.
+    Cerca ISWC e autori di un brano su MusicBrainz. Ritorna (iswc, compositori, autori).
+    1. Se c'è l'ISRC: identifica la registrazione esatta e ne segue l'opera.
+    2. Altrimenti (o se l'ISRC non porta a un'opera): ricerca per testo, accettando solo
+       risultati con titolo quasi identico e artista in comune, provando più candidati.
+    Rispettare il limite di 1 req/sec (ogni richiesta attende 1.1s).
     """
-    headers = {"User-Agent": "BroadcasterReportsApp/1.0.0 ( contact@broadcaster-reports.it )"}
-    
-    # Step 1: Cerca la registrazione (recording)
-    query = f'artist:"{artist}" AND recording:"{title}"'
-    encoded_query = urllib.parse.quote(query)
-    url = f"https://musicbrainz.org/ws/2/recording/?query={encoded_query}&fmt=json"
-    
     try:
-        # Rispetta il limite delle richieste
-        time.sleep(1.1)
-        r = requests.get(url, headers=headers, timeout=10)
-        if r.status_code != 200:
-            return None, None, None
-            
-        data = r.json()
-        recordings = data.get("recordings", [])
-        if not recordings:
-            # Ricerca fallback più semplice
-            query_simple = f'"{artist}" "{title}"'
-            encoded_query_simple = urllib.parse.quote(query_simple)
-            url_simple = f"https://musicbrainz.org/ws/2/recording/?query={encoded_query_simple}&fmt=json"
-            time.sleep(1.1)
-            r = requests.get(url_simple, headers=headers, timeout=10)
-            if r.status_code == 200:
-                recordings = r.json().get("recordings", [])
-                
-        if not recordings:
-            return None, None, None
-            
-        recording = recordings[0]
-        recording_id = recording.get("id")
-        
-        # Step 2: Dettagli registrazione con relazioni di opera (work-rels) e artisti
-        details_url = f"https://musicbrainz.org/ws/2/recording/{recording_id}?inc=work-rels+artist-rels+work-level-rels&fmt=json"
-        time.sleep(1.1)
-        r = requests.get(details_url, headers=headers, timeout=10)
-        if r.status_code != 200:
-            return None, None, None
-            
-        details = r.json()
-        relations = details.get("relations", [])
-        
-        iswc = None
-        composers = []
-        lyricists = []
-        
-        # Cerca opere (works) collegate
-        for rel in relations:
-            if rel.get("target-type") == "work":
-                work = rel.get("work", {})
-                iswcs = work.get("iswcs", [])
-                if iswcs:
-                    iswc = iswcs[0]
-                
-                # Ottieni le relazioni dell'opera per trovare autori e compositori
-                # A volte sono già incluse nell'opera di MusicBrainz
-                work_relations = work.get("relations", [])
-                for w_rel in work_relations:
-                    if w_rel.get("target-type") == "artist":
-                        artist_name = w_rel.get("artist", {}).get("name")
-                        rel_type = w_rel.get("type")
-                        if rel_type == "composer":
-                            composers.append(artist_name)
-                        elif rel_type in ["lyricist", "writer"]:
-                            lyricists.append(artist_name)
-                            
-        # Se non ha trovato compositori/autori dall'opera, proviamo a ricavarli dalle relazioni dirette del recording
-        if not composers:
-            for rel in relations:
-                if rel.get("target-type") == "artist":
-                    artist_name = rel.get("artist", {}).get("name")
-                    rel_type = rel.get("type")
-                    if rel_type == "composer":
-                        composers.append(artist_name)
-                    elif rel_type in ["lyricist", "writer"]:
-                        lyricists.append(artist_name)
-                        
-        composers_str = ", ".join(list(set(composers))) if composers else None
-        lyricists_str = ", ".join(list(set(lyricists))) if lyricists else None
-        
-        return iswc, composers_str, lyricists_str
+        if isrc and str(isrc).strip() not in ('', '-', 'N/A', 'N/D'):
+            data = _mb_get(f"https://musicbrainz.org/ws/2/isrc/{urllib.parse.quote(str(isrc).strip())}?inc=work-rels&fmt=json")
+            for recording in (data or {}).get("recordings", []):
+                iswc, composers, lyricists = _credits_from_recording(recording)
+                if iswc or composers or lyricists:
+                    return _as_result(iswc, composers, lyricists)
+
+        query = urllib.parse.quote(f'artist:"{artist}" AND recording:"{_norm_title(title) or title}"')
+        data = _mb_get(f"https://musicbrainz.org/ws/2/recording/?query={query}&limit=15&fmt=json")
+        candidates = []
+        for rec in (data or {}).get("recordings", []):
+            rec_artist = " ".join(c.get("name", "") + " " + c.get("artist", {}).get("name", "") for c in rec.get("artist-credit", []))
+            if is_same_recording(artist, title, rec_artist, rec.get("title")):
+                candidates.append(rec)
+
+        # Le registrazioni collegate a un'opera sono poche: ne proviamo al massimo 3
+        for rec in candidates[:3]:
+            details = _mb_get(f"https://musicbrainz.org/ws/2/recording/{rec['id']}?inc=work-rels&fmt=json")
+            if not details:
+                continue
+            iswc, composers, lyricists = _credits_from_recording(details)
+            if iswc or composers or lyricists:
+                return _as_result(iswc, composers, lyricists)
     except Exception as e:
         print(f"[MUSICBRAINZ] Errore durante la ricerca: {e}")
-        
+
     return None, None, None
 
 def run_enrichment(limit=50):
